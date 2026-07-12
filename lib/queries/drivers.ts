@@ -10,9 +10,9 @@ export interface Driver extends QueryResultRow {
   license_expiry: string | null
   license_data: any | null
   category: string
-  status: 'pending_approval' | 'available' | 'on_trip' | 'off_duty' | 'suspended'
+  status: 'available' | 'on_trip' | 'off_duty' | 'suspended'
   trip_count: number
-  safety_score: number
+  safety: 'available' | 'on_trip' | 'off_duty' | 'suspended'
   registered_by: number | null
   approved_by: number | null
   created_at: Date
@@ -21,11 +21,10 @@ export interface Driver extends QueryResultRow {
 
 export async function getAllDrivers() {
   const result = await query<Driver>(`
-    SELECT * FROM drivers
-    ORDER BY 
-      CASE WHEN status = 'pending_approval' THEN 0 ELSE 1 END,
-      status, 
-      name
+    SELECT 
+      *
+    FROM drivers
+    ORDER BY status, name
   `)
   return result.rows
 }
@@ -36,18 +35,22 @@ export async function createDriver(data: {
   license_id: string
   category: string
   registered_by: number
+  licenseData?: any
+  licenseExpiry?: string | null
 }) {
   const result = await query<Driver>(
     `INSERT INTO drivers (
-      name, contact, license_id, category, registered_by, status
-    ) VALUES ($1, $2, $3, $4, $5, 'pending_approval')
+      name, contact, license_id, category, registered_by, status, license_verified, license_data, license_expiry
+    ) VALUES ($1, $2, $3, $4, $5, 'available', true, $6, $7)
     RETURNING *`,
     [
       data.name,
       data.contact,
       data.license_id,
       data.category,
-      data.registered_by
+      data.registered_by,
+      data.licenseData ? JSON.stringify(data.licenseData) : null,
+      data.licenseExpiry || null
     ]
   )
   return result.rows[0]

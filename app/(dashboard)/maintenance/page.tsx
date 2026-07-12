@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Wrench, Plus, CheckCircle2, Clock, Calendar, ArrowUpDown } from 'lucide-react'
+import { Wrench, Plus, CheckCircle2, Clock, Calendar, ArrowUpDown, Pen } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DataTable } from '@/components/ui/data-table'
 import { ColumnDef } from '@tanstack/react-table'
 import LogMaintenanceModal from '@/components/maintenance/LogMaintenanceModal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 
 type MaintenanceRecord = {
   id: number
@@ -30,6 +31,7 @@ export default function MaintenancePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isLogModalOpen, setIsLogModalOpen] = useState(false)
+  const [confirmStatus, setConfirmStatus] = useState<{ id: number, newStatus: string } | null>(null)
 
   const fetchRecords = async () => {
     try {
@@ -49,18 +51,20 @@ export default function MaintenancePage() {
     fetchRecords()
   }, [])
 
-  const updateStatus = async (id: number, newStatus: string) => {
-    if (!window.confirm(`Are you sure you want to mark this maintenance record as ${newStatus.replace('_', ' ')}?`)) {
-      return
-    }
-
+  const executeStatusUpdate = async () => {
+    if (!confirmStatus) return
+    const { id, newStatus } = confirmStatus
+    
     try {
       const res = await fetch(`/api/maintenance/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
       })
-      if (res.ok) fetchRecords()
+      if (res.ok) {
+        fetchRecords()
+        setConfirmStatus(null)
+      }
     } catch (e) {
       console.error(e)
     }
@@ -132,7 +136,7 @@ export default function MaintenancePage() {
             {r.status === 'scheduled' && (
               <Button 
                 variant="ghost" 
-                onClick={() => updateStatus(r.id, 'in_progress')} 
+                onClick={() => setConfirmStatus({ id: r.id, newStatus: 'in_progress' })} 
                 className="text-blue-500 hover:text-blue-400 hover:bg-blue-500/10 h-8 px-2"
               >
                 Start
@@ -141,7 +145,7 @@ export default function MaintenancePage() {
             {r.status === 'in_progress' && (
               <Button 
                 variant="ghost" 
-                onClick={() => updateStatus(r.id, 'completed')} 
+                onClick={() => setConfirmStatus({ id: r.id, newStatus: 'completed' })} 
                 className="text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 h-8 px-2"
               >
                 Complete
@@ -161,6 +165,7 @@ export default function MaintenancePage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Wrench className="w-6 h-6 text-primary" />
             Maintenance Logs
+            <Badge variant="secondary" className="ml-2 bg-indigo-500/10 text-indigo-400 gap-1.5"><Pen className="w-3.5 h-3.5"/> Editor</Badge>
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Track vehicle repairs, scheduled service, and maintenance costs.</p>
         </div>
@@ -240,6 +245,25 @@ export default function MaintenancePage() {
         onClose={() => setIsLogModalOpen(false)} 
         onSuccess={fetchRecords} 
       />
+
+      <Dialog open={!!confirmStatus} onOpenChange={(open) => { if (!open) setConfirmStatus(null) }}>
+        <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800 text-white">
+          <DialogHeader>
+            <DialogTitle>Confirm Status Update</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Are you sure you want to mark this maintenance record as {confirmStatus?.newStatus.replace('_', ' ')}?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setConfirmStatus(null)} className="border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800">
+              Cancel
+            </Button>
+            <Button onClick={executeStatusUpdate} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

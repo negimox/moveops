@@ -33,7 +33,9 @@ export async function POST(request: NextRequest) {
 
     const driver = await createDriver({
       ...data,
-      registered_by: user.id
+      registered_by: user.id,
+      licenseData: null,
+      licenseExpiry: null
     })
 
     return NextResponse.json({ driver }, { status: 201 })
@@ -47,3 +49,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

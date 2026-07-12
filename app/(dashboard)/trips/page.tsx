@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Map, Plus, ArrowUpDown, Truck, Calendar, CheckCircle2, Navigation, Loader2, Info, MapPin } from 'lucide-react'
+import { Map, Plus, ArrowUpDown, Truck, Calendar, CheckCircle2, Navigation, Loader2, Info, MapPin, Eye, Pen } from 'lucide-react'
 import CreateTripModal from '@/components/trips/CreateTripModal'
 import CompleteTripModal from '@/components/trips/CompleteTripModal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +20,7 @@ type Trip = {
   driver_name: string
   origin: string
   destination: string
-  status: 'scheduled' | 'dispatched' | 'on_trip' | 'completed' | 'cancelled'
+  status: 'scheduled' | 'dispatched' | 'completed' | 'cancelled'
   avg_cost_per_km: string
   created_at: string
   vehicle_capacity?: string
@@ -29,10 +29,9 @@ type Trip = {
   driver_status?: string
 }
 
-const statusConfig = {
-  scheduled: { color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', label: 'Scheduled' },
+const statusConfig: Record<Trip['status'], { color: string; label: string }> = {
+  scheduled: { color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', label: 'Draft' },
   dispatched: { color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', label: 'Dispatched' },
-  on_trip: { color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20', label: 'On Trip' },
   completed: { color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: 'Completed' },
   cancelled: { color: 'text-destructive bg-destructive/10 border-destructive/20', label: 'Cancelled' },
 }
@@ -46,6 +45,8 @@ export default function TripsPage() {
   const [completeModalTripId, setCompleteModalTripId] = useState<number | null>(null)
   const [completeModalCost, setCompleteModalCost] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+
+  const [user, setUser] = useState<{ role: string } | null>(null)
 
   const fetchTrips = async () => {
     try {
@@ -62,6 +63,11 @@ export default function TripsPage() {
   }
 
   useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => { if (data.user) setUser(data.user) })
+      .catch(console.error)
+
     fetchTrips()
   }, [])
 
@@ -207,21 +213,29 @@ export default function TripsPage() {
               </>
             )}
             {r.status === 'dispatched' && (
-              <Button disabled={isAnyLoading} variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateStatus(r.id, 'on_trip'); }} className="text-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 h-8 px-2 text-xs">
-                {actionLoading === `${r.id}-on_trip` && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
-                Mark On Trip
-              </Button>
-            )}
-            {r.status === 'on_trip' && (
-              <Button disabled={isAnyLoading} variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCompleteModalCost(r.avg_cost_per_km); setCompleteModalTripId(r.id); }} className="text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 h-8 px-2 text-xs">
-                Complete
-              </Button>
+              <>
+                <Button disabled={isAnyLoading} variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCompleteModalCost(r.avg_cost_per_km); setCompleteModalTripId(r.id); }} className="text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 h-8 px-2 text-xs">
+                  {actionLoading === `${r.id}-completed` && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
+                  Complete
+                </Button>
+                <Button disabled={isAnyLoading} variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateStatus(r.id, 'cancelled'); }} className="text-destructive hover:bg-destructive/10 h-8 px-2 text-xs">
+                  {actionLoading === `${r.id}-cancelled` && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
+                  Cancel
+                </Button>
+              </>
             )}
           </div>
         )
       },
     },
-  ], [])
+  ], [actionLoading, user])
+
+  const filteredColumns = useMemo(() => {
+    if (user?.role === 'safety_officer') {
+      return columns.filter(c => c.id !== 'actions' && (c as any).accessorKey !== 'actions')
+    }
+    return columns
+  }, [columns, user])
 
   return (
     <div className="p-8 space-y-6">
@@ -229,13 +243,20 @@ export default function TripsPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Map className="w-6 h-6 text-primary" />
-            Trip Management
+            Trips Management
+            {user?.role === 'safety_officer' ? (
+              <Badge variant="secondary" className="ml-2 bg-slate-800 text-slate-300 gap-1.5"><Eye className="w-3.5 h-3.5"/> View Only</Badge>
+            ) : (
+              <Badge variant="secondary" className="ml-2 bg-indigo-500/10 text-indigo-400 gap-1.5"><Pen className="w-3.5 h-3.5"/> Editor</Badge>
+            )}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Create, dispatch, and track active trips across the fleet.</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" /> Create Trip
-        </Button>
+        {user?.role !== 'safety_officer' && (
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" /> Create Trip
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -255,7 +276,7 @@ export default function TripsPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-3">
               <div className="p-2 bg-amber-500/10 rounded-lg"><Calendar className="w-4 h-4 text-amber-500" /></div>
-              Scheduled
+              Draft
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -266,12 +287,12 @@ export default function TripsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-3">
-              <div className="p-2 bg-indigo-500/10 rounded-lg"><Navigation className="w-4 h-4 text-indigo-500" /></div>
-              On Trip
+              <div className="p-2 bg-blue-500/10 rounded-lg"><Navigation className="w-4 h-4 text-blue-500" /></div>
+              Dispatched
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{trips.filter(t => t.status === 'on_trip').length}</p>
+            <p className="text-2xl font-bold">{trips.filter(t => t.status === 'dispatched').length}</p>
           </CardContent>
         </Card>
 
@@ -299,7 +320,7 @@ export default function TripsPage() {
             {error}
           </div>
         ) : (
-          <DataTable columns={columns} data={trips} searchKey="trip_code" searchPlaceholder="Search by Trip Code..." />
+          <DataTable columns={filteredColumns} data={trips} searchKey="trip_code" searchPlaceholder="Search by Trip Code..." />
         )}
       </Card>
 

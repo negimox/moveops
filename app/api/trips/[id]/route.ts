@@ -20,8 +20,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid trip ID' }, { status: 400 })
     }
 
-    if (!data.status) {
-      return NextResponse.json({ error: 'Status is required' }, { status: 400 })
+    const VALID_TRIP_STATUSES = ['scheduled', 'dispatched', 'completed', 'cancelled']
+    if (!data.status || !VALID_TRIP_STATUSES.includes(data.status)) {
+      return NextResponse.json({ error: 'Invalid or missing status' }, { status: 400 })
     }
 
     let details = undefined
