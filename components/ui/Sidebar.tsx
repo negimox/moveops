@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { UserRole } from '@/lib/auth'
+import { Button } from '@/components/ui/button'
 
 // ─── Nav item definitions ──────────────────────────────────────────────────
 
@@ -87,43 +88,24 @@ export default function Sidebar() {
   }
 
   return (
-    <aside style={{
-      width: 'var(--sidebar-width)',
-      minHeight: '100vh',
-      background: 'var(--sidebar-bg)',
-      borderRight: '1px solid var(--sidebar-border)',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'fixed',
-      top: 0, left: 0, bottom: 0,
-      zIndex: 40,
-    }}>
-
+    <aside className="w-64 min-h-screen bg-sidebar border-r border-border flex flex-col flex-none">
       {/* ── Logo ─────────────────────────────────────────────────── */}
-      <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--sidebar-border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '34px', height: '34px',
-            background: 'var(--color-primary)',
-            borderRadius: '9px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '18px', flexShrink: 0,
-          }}>
-            🚌
-          </div>
-          <div>
-            <p style={{ fontWeight: 700, color: '#fff', fontSize: '14px', letterSpacing: '-0.2px' }}>
-              TransitOps
-            </p>
-            <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.5px' }}>
-              TRANSPORT OPS
-            </p>
-          </div>
+      <div className="p-5 border-b border-border flex items-center gap-2.5">
+        <div className="w-9 h-9 bg-primary text-primary-foreground rounded-xl flex items-center justify-center text-lg shrink-0">
+          🚌
+        </div>
+        <div>
+          <p className="font-bold text-sidebar-foreground text-sm tracking-tight">
+            TransitOps
+          </p>
+          <p className="text-[10px] text-sidebar-foreground/50 tracking-wide uppercase">
+            TRANSPORT OPS
+          </p>
         </div>
       </div>
 
       {/* ── Nav ──────────────────────────────────────────────────── */}
-      <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
+      <nav className="flex-1 p-3 overflow-y-auto space-y-1">
         {visibleNav.map(item => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
           return (
@@ -131,39 +113,18 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '9px 10px',
-                borderRadius: '8px',
-                marginBottom: '2px',
-                textDecoration: 'none',
-                color: isActive ? '#fff' : 'var(--sidebar-text)',
-                background: isActive ? 'var(--sidebar-active)' : 'transparent',
-                fontWeight: isActive ? 600 : 400,
-                fontSize: '13px',
-                transition: 'all var(--transition)',
-              }}
-              onMouseEnter={e => {
-                if (!isActive) {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'
-                  ;(e.currentTarget as HTMLElement).style.color = '#fff'
-                }
-              }}
-              onMouseLeave={e => {
-                if (!isActive) {
-                  (e.currentTarget as HTMLElement).style.background = 'transparent'
-                  ;(e.currentTarget as HTMLElement).style.color = 'var(--sidebar-text)'
-                }
-              }}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                isActive 
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' 
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+              }`}
             >
-              <span style={{ fontSize: '15px', width: '20px', textAlign: 'center', flexShrink: 0 }}>
+              <span className="text-base w-5 text-center shrink-0">
                 {item.icon}
               </span>
               {item.label}
               {isActive && (
-                <span style={{ marginLeft: 'auto', width: '5px', height: '5px', borderRadius: '50%', background: 'rgba(255,255,255,0.6)' }} />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />
               )}
             </a>
           )
@@ -171,62 +132,36 @@ export default function Sidebar() {
       </nav>
 
       {/* ── User + Logout ─────────────────────────────────────────── */}
-      <div style={{ padding: '12px 8px', borderTop: '1px solid var(--sidebar-border)' }}>
+      <div className="p-3 border-t border-border">
         {user && (
-          <div style={{ padding: '10px', borderRadius: '8px', marginBottom: '8px', background: 'rgba(255,255,255,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '50%',
-                background: ROLE_COLORS[user.role] ?? '#4f46e5',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '11px', fontWeight: 700, color: '#fff', flexShrink: 0,
-              }}>
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <div style={{ overflow: 'hidden' }}>
-                <p style={{ fontWeight: 600, color: '#fff', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.name}
-                </p>
-                <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {ROLE_LABELS[user.role]}
-                </p>
-              </div>
+          <div className="p-2.5 rounded-lg mb-2 bg-sidebar-accent/30 flex items-center gap-2">
+            <div 
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+              style={{ background: ROLE_COLORS[user.role] ?? '#4f46e5' }}
+            >
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="overflow-hidden">
+              <p className="font-semibold text-sidebar-foreground text-xs whitespace-nowrap overflow-hidden text-ellipsis">
+                {user.name}
+              </p>
+              <p className="text-sidebar-foreground/60 text-[10px] whitespace-nowrap overflow-hidden text-ellipsis">
+                {ROLE_LABELS[user.role]}
+              </p>
             </div>
           </div>
         )}
 
-        <button
+        <Button
           id="sidebar-logout-btn"
           onClick={handleLogout}
           disabled={loggingOut}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 10px',
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '7px',
-            color: 'rgba(255,255,255,0.45)',
-            fontSize: '12px',
-            cursor: 'pointer',
-            transition: 'all var(--transition)',
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.12)'
-            ;(e.currentTarget as HTMLElement).style.color = '#ef4444'
-            ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.3)'
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.background = 'transparent'
-            ;(e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.45)'
-            ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)'
-          }}
+          variant="outline"
+          className="w-full justify-start gap-2 bg-transparent border-sidebar-border text-sidebar-foreground/60 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-all"
         >
-          <span>↪</span>
+          <span className="text-base">↪</span>
           {loggingOut ? 'Signing out…' : 'Sign out'}
-        </button>
+        </Button>
       </div>
     </aside>
   )
