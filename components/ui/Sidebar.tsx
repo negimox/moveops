@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import type { UserRole } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
+import { Eye, Pen } from 'lucide-react'
 
 // ─── Nav item definitions ──────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ const ALL_NAV: NavItem[] = [
 const NAV_BY_ROLE: Record<UserRole, string[]> = {
   fleet_manager:     ['Dashboard', 'Fleet', 'Maintenance'],
   dispatcher:        ['Dashboard', 'Trips'],
-  safety_officer:    ['Dashboard', 'Drivers'],
+  safety_officer:    ['Dashboard', 'Drivers', 'Trips'],
   financial_analyst: ['Dashboard', 'Fuel & Expenses', 'Analytics'],
 }
 
@@ -53,6 +54,17 @@ const ROLE_COLORS: Record<UserRole, string> = {
   dispatcher:        '#06b6d4',
   safety_officer:    '#f59e0b',
   financial_analyst: '#10b981',
+}
+
+const NAV_PERMISSIONS: Record<string, { edit?: string[], view?: string[] }> = {
+  '/dashboard':      { view: ['fleet_manager', 'dispatcher', 'safety_officer', 'financial_analyst'] },
+  '/fleet':          { edit: ['fleet_manager'] },
+  '/drivers':        { edit: ['safety_officer'] },
+  '/trips':          { edit: ['dispatcher'], view: ['safety_officer'] },
+  '/maintenance':    { edit: ['fleet_manager'] },
+  '/fuel-expenses':  { edit: ['financial_analyst'] },
+  '/analytics':      { view: ['financial_analyst'] },
+  '/settings':       { edit: ['fleet_manager', 'dispatcher', 'safety_officer', 'financial_analyst'] },
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────
@@ -122,9 +134,17 @@ export default function Sidebar() {
               <span className="text-base w-5 text-center shrink-0">
                 {item.icon}
               </span>
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              
+              {user && NAV_PERMISSIONS[item.href]?.view?.includes(user.role) && (
+                <Eye className="w-4 h-4 opacity-50 shrink-0" title="View Only" />
+              )}
+              {user && NAV_PERMISSIONS[item.href]?.edit?.includes(user.role) && (
+                <Pen className="w-3.5 h-3.5 opacity-50 shrink-0" title="Edit Access" />
+              )}
+              
               {isActive && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />
+                <span className="ml-2 w-1.5 h-1.5 rounded-full bg-sidebar-primary shrink-0" />
               )}
             </a>
           )

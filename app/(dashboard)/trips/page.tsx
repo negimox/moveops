@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { Map, Plus, ArrowUpDown, Truck, Calendar, CheckCircle2, Navigation, Loader2, Info, MapPin } from 'lucide-react'
+import { Map, Plus, ArrowUpDown, Truck, Calendar, CheckCircle2, Navigation, Loader2, Info, MapPin, Eye, Pen } from 'lucide-react'
 import CreateTripModal from '@/components/trips/CreateTripModal'
 import CompleteTripModal from '@/components/trips/CompleteTripModal'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,6 +47,8 @@ export default function TripsPage() {
   const [completeModalCost, setCompleteModalCost] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  const [user, setUser] = useState<{ role: string } | null>(null)
+
   const fetchTrips = async () => {
     try {
       setLoading(true)
@@ -62,6 +64,11 @@ export default function TripsPage() {
   }
 
   useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => { if (data.user) setUser(data.user) })
+      .catch(console.error)
+
     fetchTrips()
   }, [])
 
@@ -221,7 +228,14 @@ export default function TripsPage() {
         )
       },
     },
-  ], [])
+  ], [actionLoading, user])
+
+  const filteredColumns = useMemo(() => {
+    if (user?.role === 'safety_officer') {
+      return columns.filter(c => c.id !== 'actions' && (c as any).accessorKey !== 'actions')
+    }
+    return columns
+  }, [columns, user])
 
   return (
     <div className="p-8 space-y-6">
@@ -229,13 +243,20 @@ export default function TripsPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Map className="w-6 h-6 text-primary" />
-            Trip Management
+            Trips Management
+            {user?.role === 'safety_officer' ? (
+              <Badge variant="secondary" className="ml-2 bg-slate-800 text-slate-300 gap-1.5"><Eye className="w-3.5 h-3.5"/> View Only</Badge>
+            ) : (
+              <Badge variant="secondary" className="ml-2 bg-indigo-500/10 text-indigo-400 gap-1.5"><Pen className="w-3.5 h-3.5"/> Editor</Badge>
+            )}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Create, dispatch, and track active trips across the fleet.</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" /> Create Trip
-        </Button>
+        {user?.role !== 'safety_officer' && (
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" /> Create Trip
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -299,7 +320,7 @@ export default function TripsPage() {
             {error}
           </div>
         ) : (
-          <DataTable columns={columns} data={trips} searchKey="trip_code" searchPlaceholder="Search by Trip Code..." />
+          <DataTable columns={filteredColumns} data={trips} searchKey="trip_code" searchPlaceholder="Search by Trip Code..." />
         )}
       </Card>
 

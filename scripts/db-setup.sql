@@ -40,7 +40,6 @@ CREATE TYPE vehicle_status AS ENUM (
 );
 
 CREATE TYPE driver_status AS ENUM (
-  'pending_approval',
   'available',
   'on_trip',
   'off_duty',
@@ -135,6 +134,7 @@ CREATE TABLE vehicles (
   avg_cost_per_km DECIMAL(10, 2)      NOT NULL DEFAULT 0.00,
   total_trips     INTEGER             NOT NULL DEFAULT 0,
   total_earnings  DECIMAL(12, 2)      NOT NULL DEFAULT 0.00,
+  region          VARCHAR(100)        DEFAULT 'North',
   notes           TEXT,
   created_at      TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ         NOT NULL DEFAULT NOW()
@@ -157,10 +157,9 @@ CREATE TABLE drivers (
   license_expiry   DATE,                         -- parsed from DigiLocker response
   license_data     JSONB,                        -- raw Setu API document payload
   category         VARCHAR(50),                  -- LMV, HMV, HPMV, etc.
-  status           driver_status      NOT NULL DEFAULT 'pending_approval',
+  status           driver_status      NOT NULL DEFAULT 'available',
   trip_count       INTEGER            NOT NULL DEFAULT 0,
-  safety_score     INTEGER            NOT NULL DEFAULT 100  -- 0–100
-                   CHECK (safety_score BETWEEN 0 AND 100),
+  safety           driver_status      NOT NULL DEFAULT 'available',
   registered_by    INTEGER            REFERENCES users(id) ON DELETE SET NULL, -- safety_officer who registered
   approved_by      INTEGER            REFERENCES users(id) ON DELETE SET NULL, -- fleet_manager who approved
   created_at       TIMESTAMPTZ        NOT NULL DEFAULT NOW(),
@@ -301,32 +300,32 @@ INSERT INTO vehicles (vehicle_id, make_model, type, year, registration_no, capac
 -- license_verified = TRUE for demo — real flow uses Setu DigiLocker
 -- ============================================================
 
-INSERT INTO drivers (name, contact, license_id, license_verified, license_expiry, category, status, trip_count, safety_score, registered_by, approved_by) VALUES
-  ('Ravi Kumar',    '+91-9810001111', 'MH12AB1234', TRUE, '2029-06-30', 'LMV',  'available', 12, 96,
+INSERT INTO drivers (name, contact, license_id, license_verified, license_expiry, category, status, trip_count, safety, registered_by, approved_by) VALUES
+  ('Ravi Kumar',    '+91-9810001111', 'MH12AB1234', TRUE, '2029-06-30', 'LMV',  'available', 12, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Amit Verma',    '+91-9820002222', 'DL05CD5678', TRUE, '2027-03-15', 'HMV',  'on_trip',   28, 88,
+  ('Amit Verma',    '+91-9820002222', 'DL05CD5678', TRUE, '2027-03-15', 'HMV',  'on_trip',   28, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Suresh Pillai', '+91-9830003333', 'KA03EF9012', TRUE, '2028-11-20', 'HMV',  'available',  9, 100,
+  ('Suresh Pillai', '+91-9830003333', 'KA03EF9012', TRUE, '2028-11-20', 'HMV',  'available',  9, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Deepak Joshi',  '+91-9840004444', 'UP32GH3456', TRUE, '2026-09-10', 'LMV',  'off_duty',   5,  74,
+  ('Deepak Joshi',  '+91-9840004444', 'UP32GH3456', TRUE, '2026-09-10', 'LMV',  'off_duty',   5,  'suspended',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Manish Tiwari', '+91-9850005555', 'GJ07IJ7890', TRUE, '2030-01-05', 'HPMV', 'available', 34,  91,
+  ('Manish Tiwari', '+91-9850005555', 'GJ07IJ7890', TRUE, '2030-01-05', 'HPMV', 'available', 34,  'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Pooja Das',     '+91-9860006666', 'WB22KL2345', FALSE, NULL,         'LMV', 'off_duty',    0, 100,
+  ('Pooja Das',     '+91-9860006666', 'WB22KL2345', FALSE, NULL,         'LMV', 'off_duty',    0, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Anil Desai',    '+91-9870007777', 'MH14XY9876', TRUE, '2031-08-12', 'LMV', 'pending_approval', 0, 100,
+  ('Anil Desai',    '+91-9870007777', 'MH14XY9876', TRUE, '2031-08-12', 'LMV', 'available', 0, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     NULL);
 
