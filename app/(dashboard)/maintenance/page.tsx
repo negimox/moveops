@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { Wrench, Plus, CheckCircle2, Clock, Calendar, ArrowUpDown } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DataTable } from '@/components/ui/data-table'
@@ -167,6 +167,57 @@ export default function MaintenancePage() {
         <Button onClick={() => setIsLogModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" /> Log Maintenance
         </Button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg"><Wrench className="w-4 h-4 text-primary" /></div>
+              Total Vehicles
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{new Set(records.map(r => r.vehicle_identifier)).size}</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 rounded-lg"><Calendar className="w-4 h-4 text-amber-500" /></div>
+              Scheduled
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{records.filter(r => r.status === 'scheduled').length}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-lg"><Clock className="w-4 h-4 text-blue-500" /></div>
+              In Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{records.filter(r => r.status === 'in_progress').length}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 rounded-lg"><CheckCircle2 className="w-4 h-4 text-emerald-500" /></div>
+              Completed
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{records.filter(r => r.status === 'completed').length}</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="overflow-hidden">
