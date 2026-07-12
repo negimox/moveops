@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import type { QueryResultRow } from 'pg';
-import { query, ensureDocumentsTable } from '../../../../../lib/db';
+import { query } from '../../../../../lib/db';
 
 /** Allowed document types for validation */
 const VALID_DOC_TYPES = [
@@ -35,7 +35,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await ensureDocumentsTable();
 
     const result = await query<DocumentRow>(
       `SELECT id, vehicle_id, doc_name, doc_type, ref_number, expiry_date, notes, created_at
@@ -89,8 +88,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    await ensureDocumentsTable();
 
     const result = await query<DocumentRow>(
       `INSERT INTO vehicle_documents (vehicle_id, doc_name, doc_type, ref_number, expiry_date, notes)

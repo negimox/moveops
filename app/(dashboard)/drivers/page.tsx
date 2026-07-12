@@ -49,7 +49,6 @@ type Driver = {
   category: string;
   status: "available" | "on_trip" | "off_duty" | "suspended";
   trip_count: number;
-  trip_count: number;
   safety: "available" | "on_trip" | "off_duty" | "suspended";
 };
 

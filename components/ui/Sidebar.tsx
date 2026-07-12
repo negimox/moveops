@@ -36,14 +36,14 @@ const ALL_NAV: NavItem[] = [
 ]
 
 const NAV_BY_ROLE: Record<UserRole, string[]> = {
-  // Fleet Manager — edit access to Fleet, Drivers, Analytics
-  fleet_manager:     ['Dashboard', 'Fleet', 'Drivers', 'Analytics', 'Settings'],
-  // Dispatcher — view-only Fleet, edit access to Trips
-  dispatcher:        ['Dashboard', 'Fleet', 'Trips', 'Settings'],
-  // Financial Analyst — full (edit) access to Drivers, view-only Trips
-  financial_analyst: ['Dashboard', 'Drivers', 'Trips', 'Settings'],
-  // Safety Officer — edit access to Fuel & Expenses + Analytics, view-only Fleet
-  safety_officer:    ['Dashboard', 'Fleet', 'Fuel & Expenses', 'Analytics', 'Settings'],
+  // Fleet Manager — owns Fleet + Maintenance, views Drivers (for approvals)
+  fleet_manager:     ['Dashboard', 'Fleet', 'Maintenance', 'Drivers', 'Settings'],
+  // Dispatcher — owns Trips
+  dispatcher:        ['Dashboard', 'Trips', 'Settings'],
+  // Safety Officer — owns Drivers, views Trips (compliance context)
+  safety_officer:    ['Dashboard', 'Drivers', 'Trips', 'Settings'],
+  // Financial Analyst — owns Fuel & Expenses + Analytics
+  financial_analyst: ['Dashboard', 'Fuel & Expenses', 'Analytics', 'Settings'],
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -62,16 +62,18 @@ const ROLE_COLORS: Record<UserRole, string> = {
 
 const NAV_PERMISSIONS: Record<string, { edit?: string[], view?: string[] }> = {
   '/dashboard':     { view: ['fleet_manager', 'dispatcher', 'safety_officer', 'financial_analyst'] },
-  // Fleet — edit for Fleet Manager, view for Dispatcher & Safety Officer
-  '/fleet':         { edit: ['fleet_manager'], view: ['dispatcher', 'safety_officer'] },
-  // Drivers — edit for Fleet Manager & Financial Analyst
-  '/drivers':       { edit: ['fleet_manager', 'financial_analyst'] },
-  // Trips — edit for Dispatcher, view for Financial Analyst
-  '/trips':         { edit: ['dispatcher'], view: ['financial_analyst'] },
-  // Fuel & Expenses — edit for Safety Officer
-  '/fuel-expenses': { edit: ['safety_officer'] },
-  // Analytics — edit for Fleet Manager & Safety Officer
-  '/analytics':     { edit: ['fleet_manager', 'safety_officer'] },
+  // Fleet — edit for Fleet Manager only
+  '/fleet':         { edit: ['fleet_manager'] },
+  // Maintenance — edit for Fleet Manager
+  '/maintenance':   { edit: ['fleet_manager'] },
+  // Drivers — edit for Safety Officer, view for Fleet Manager (approvals)
+  '/drivers':       { edit: ['safety_officer'], view: ['fleet_manager'] },
+  // Trips — edit for Dispatcher, view for Safety Officer (compliance)
+  '/trips':         { edit: ['dispatcher'], view: ['safety_officer'] },
+  // Fuel & Expenses — edit for Financial Analyst
+  '/fuel-expenses': { edit: ['financial_analyst'] },
+  // Analytics — edit for Financial Analyst
+  '/analytics':     { edit: ['financial_analyst'] },
   '/settings':      { edit: ['fleet_manager', 'dispatcher', 'safety_officer', 'financial_analyst'] },
 }
 
