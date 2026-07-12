@@ -368,9 +368,8 @@ export default function DriversPage() {
         header: "Actions",
         cell: ({ row }) => {
           const d = row.original;
-          // Only fleet manager or safety officer can update status
-          const canEdit =
-            user?.role === "safety_officer" || user?.role === "fleet_manager";
+          // Only Safety Officer can edit driver status/actions
+          const canEdit = user?.role === 'safety_officer';
 
           if (!canEdit) {
             return null;
@@ -505,8 +504,7 @@ export default function DriversPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Users className="w-6 h-6 text-primary" />
             Drivers & Compliance
-            {user?.role === "safety_officer" ||
-            user?.role === "fleet_manager" ? (
+            {user?.role === 'safety_officer' ? (
               <Badge
                 variant="secondary"
                 className="ml-2 bg-indigo-500/10 text-indigo-400 gap-1.5"
@@ -527,8 +525,7 @@ export default function DriversPage() {
           </p>
         </div>
 
-        {(user?.role === "safety_officer" ||
-          user?.role === "fleet_manager") && (
+        {user?.role === 'safety_officer' && (
           <Button onClick={() => setIsAddModalOpen(true)}>
             <Plus className="w-4 h-4 mr-2" /> Register Driver
           </Button>
