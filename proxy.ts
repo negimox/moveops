@@ -1,6 +1,6 @@
 /**
- * proxy.ts  (was middleware.ts — renamed in Next.js 16)
- * Next.js Proxy — runs on the Edge Runtime before every matched request.
+ * proxy.ts
+ * Next.js 16 Proxy — runs on the Edge Runtime before every matched request.
  *
  * WHAT IT DOES:
  *   - Protects all /dashboard/* routes — unauthenticated users are redirected to /login

@@ -707,18 +707,13 @@ npm install
 ### 2. Configure Environment
 
 ```bash
+# .example.env already has all shared team credentials pre-filled.
+# Just copy it — no editing needed.
 cp .example.env .env.local
 ```
 
-Set these in `.env.local`:
-```env
-DATABASE_URL=postgresql://...        # PostgreSQL connection string
-JWT_SECRET=your-secret-key            # Random 32-byte string
-AWS_ACCESS_KEY_ID=AKIA...            # AWS credentials for Bedrock
-AWS_SECRET_ACCESS_KEY=...             # AWS secret key
-AWS_REGION=ap-south-1                 # Mumbai region
-BEDROCK_MODEL_ID=global.anthropic.claude-haiku-4-5-20251001-v1:0
-```
+> [!NOTE]
+> The `.example.env` file contains the shared team database (Aiven Cloud) and AWS Bedrock credentials. All teammates can use the same file as-is.
 
 ### 3. Initialize Database
 

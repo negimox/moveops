@@ -1,26 +1,19 @@
-const escapeCsvValue = (value) => {
-    if (value === null || typeof value === 'undefined') {
-        return '';
-    }
-
-    const normalizedValue = String(typeof value === 'string' ? value : JSON.stringify(value))
-        .replace(/\r?\n/g, '\\n');
-
-    return `"${normalizedValue.replace(/"/g, '""')}"`;
-};
+/**
+ * backend/utils/exportService.js
+ *
+ * NOTE: This file is kept for reference/compatibility.
+ * The canonical TypeScript version is at: lib/utils/csv.ts
+ * Use that in all API routes instead of this file.
+ */
 
 // Utility to convert JSON array to CSV format for Financial Analyst Reports
 const jsonToCsv = (data) => {
-    if (!Array.isArray(data) || !data.length) {
-        return '';
-    }
-
-    const headers = [...new Set(data.flatMap(row => Object.keys(row || {})))];
+    if (!data || !data.length) return '';
+    const headers = Object.keys(data[0]).join(',');
     const rows = data.map(row =>
-        headers.map(header => escapeCsvValue(row?.[header])).join(',')
+        Object.values(row).map(value => `"${value}"`).join(',')
     ).join('\n');
-
-    return `${headers.join(',')}\n${rows}`;
+    return `${headers}\n${rows}`;
 };
 
-module.exports = { jsonToCsv, escapeCsvValue };
+module.exports = { jsonToCsv };

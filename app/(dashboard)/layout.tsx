@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-/**
- * app/(dashboard)/layout.tsx
- * Dashboard shell layout — dark sidebar + content area + AI Copilot.
- * All pages inside /(dashboard)/ inherit this layout.
- */
-
-=======
->>>>>>> main
 import Sidebar from '@/components/ui/Sidebar'
 import AICopilot from '@/components/ai/AICopilot'
 
