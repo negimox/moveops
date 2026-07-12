@@ -1,4 +1,5 @@
 import Sidebar from '@/components/ui/Sidebar'
+import AICopilot from '@/components/ai/AICopilot'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,6 +8,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 flex flex-col min-h-screen">
         {children}
       </main>
+      <AICopilot />
     </div>
   )
 }
