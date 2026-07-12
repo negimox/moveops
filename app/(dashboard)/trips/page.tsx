@@ -20,7 +20,7 @@ type Trip = {
   driver_name: string
   origin: string
   destination: string
-  status: 'scheduled' | 'dispatched' | 'on_trip' | 'completed' | 'cancelled'
+  status: 'scheduled' | 'dispatched' | 'completed' | 'cancelled'
   avg_cost_per_km: string
   created_at: string
   vehicle_capacity?: string
@@ -29,10 +29,9 @@ type Trip = {
   driver_status?: string
 }
 
-const statusConfig = {
-  scheduled: { color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', label: 'Scheduled' },
+const statusConfig: Record<Trip['status'], { color: string; label: string }> = {
+  scheduled: { color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', label: 'Draft' },
   dispatched: { color: 'text-blue-400 bg-blue-500/10 border-blue-500/20', label: 'Dispatched' },
-  on_trip: { color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20', label: 'On Trip' },
   completed: { color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: 'Completed' },
   cancelled: { color: 'text-destructive bg-destructive/10 border-destructive/20', label: 'Cancelled' },
 }
@@ -214,15 +213,16 @@ export default function TripsPage() {
               </>
             )}
             {r.status === 'dispatched' && (
-              <Button disabled={isAnyLoading} variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateStatus(r.id, 'on_trip'); }} className="text-indigo-500 hover:text-indigo-400 hover:bg-indigo-500/10 h-8 px-2 text-xs">
-                {actionLoading === `${r.id}-on_trip` && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
-                Mark On Trip
-              </Button>
-            )}
-            {r.status === 'on_trip' && (
-              <Button disabled={isAnyLoading} variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCompleteModalCost(r.avg_cost_per_km); setCompleteModalTripId(r.id); }} className="text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 h-8 px-2 text-xs">
-                Complete
-              </Button>
+              <>
+                <Button disabled={isAnyLoading} variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCompleteModalCost(r.avg_cost_per_km); setCompleteModalTripId(r.id); }} className="text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10 h-8 px-2 text-xs">
+                  {actionLoading === `${r.id}-completed` && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
+                  Complete
+                </Button>
+                <Button disabled={isAnyLoading} variant="ghost" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateStatus(r.id, 'cancelled'); }} className="text-destructive hover:bg-destructive/10 h-8 px-2 text-xs">
+                  {actionLoading === `${r.id}-cancelled` && <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />}
+                  Cancel
+                </Button>
+              </>
             )}
           </div>
         )
@@ -276,7 +276,7 @@ export default function TripsPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-3">
               <div className="p-2 bg-amber-500/10 rounded-lg"><Calendar className="w-4 h-4 text-amber-500" /></div>
-              Scheduled
+              Draft
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -287,12 +287,12 @@ export default function TripsPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-3">
-              <div className="p-2 bg-indigo-500/10 rounded-lg"><Navigation className="w-4 h-4 text-indigo-500" /></div>
-              On Trip
+              <div className="p-2 bg-blue-500/10 rounded-lg"><Navigation className="w-4 h-4 text-blue-500" /></div>
+              Dispatched
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{trips.filter(t => t.status === 'on_trip').length}</p>
+            <p className="text-2xl font-bold">{trips.filter(t => t.status === 'dispatched').length}</p>
           </CardContent>
         </Card>
 

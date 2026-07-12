@@ -9,6 +9,7 @@ type Vehicle = {
   id: number
   vehicle_id: string
   type: string
+  status: string
 }
 
 type LogMaintenanceModalProps = {
@@ -28,7 +29,8 @@ export default function LogMaintenanceModal({ isOpen, onClose, onSuccess }: LogM
         .then(res => res.json())
         .then(data => {
           if (data.vehicles) {
-            setVehicles(data.vehicles)
+            // Show all vehicles except those currently on an active trip
+            setVehicles(data.vehicles.filter((v: Vehicle) => v.status !== 'on_trip'))
           }
         })
         .catch(console.error)
@@ -96,10 +98,17 @@ export default function LogMaintenanceModal({ isOpen, onClose, onSuccess }: LogM
           <form id="log-maintenance-form" onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Vehicle *</label>
+              {/* Info banner */}
+              <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-400">
+                <span className="mt-0.5">⚠️</span>
+                <span>Adding a vehicle to maintenance will automatically set its status to <strong>In Shop</strong>, removing it from active trip assignments.</span>
+              </div>
               <select required name="vehicle_id" className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                 <option value="">Select a vehicle...</option>
                 {vehicles.map(v => (
-                  <option key={v.id} value={v.id}>{v.vehicle_id} ({v.type})</option>
+                  <option key={v.id} value={v.id}>
+                    {v.vehicle_id} ({v.type}){v.status === 'in_shop' ? ' — Already In Shop' : ''}
+                  </option>
                 ))}
               </select>
             </div>

@@ -50,7 +50,6 @@ CREATE TYPE driver_status AS ENUM (
 CREATE TYPE trip_status AS ENUM (
   'scheduled',
   'dispatched',
-  'on_trip',
   'completed',
   'cancelled'
 );
@@ -379,7 +378,7 @@ INSERT INTO trips (trip_code, vehicle_id, driver_id, dispatcher_id, origin, dest
     (SELECT id FROM drivers  WHERE license_id = 'DL05CD5678'),
     (SELECT id FROM users    WHERE email = 'dispatch@transitops.in'),
     'Delhi — Naraina ICD',           'Jaipur — RIICO Industrial Area',
-    'on_trip', 4200.00, NULL, 52000.00,
+    'dispatched', 4200.00, NULL, 52000.00,
     NOW() - INTERVAL '1 day', NULL),
 
   ('TRP-003',

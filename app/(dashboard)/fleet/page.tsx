@@ -81,15 +81,20 @@ export const columns: ColumnDef<Vehicle>[] = [
     header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as Vehicle["status"]
+      const labels: Record<Vehicle['status'], string> = {
+        available: 'Available',
+        on_trip: 'On Trip',
+        in_shop: 'In Shop',
+        retired: 'Retired',
+      }
       return (
         <div className="text-center">
           <Badge variant="outline" className={`${statusColors[status]}`}>
-            {status.replace('_', ' ').toUpperCase()}
+            {labels[status]}
           </Badge>
         </div>
       )
     },
-    // We will define columns inside the component so it can access the edit handler
   },
 ]
 
@@ -125,13 +130,19 @@ export default function FleetPage() {
     if (!editVehicle) return
     setEditLoading(true)
     try {
-      // In a real app, we'd have a PATCH /api/vehicles/[id] endpoint.
-      // Since this is a hackathon, we might just update the status.
-      // Wait, let's assume we just want to close the modal for now if there is no endpoint,
-      // or we can just mock it or implement it. Let's just create a quick PATCH /api/vehicles/[id] or just update state.
-      // Actually, if we don't have the API, we can just say updated.
-      alert("Vehicle update would be saved here.")
+      const res = await fetch(`/api/vehicles/${editVehicle.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: editStatus }),
+      })
+      if (!res.ok) {
+        const d = await res.json()
+        throw new Error(d.error || 'Failed to update vehicle')
+      }
       setEditVehicle(null)
+      await fetchVehicles()
+    } catch (err: any) {
+      alert(err.message)
     } finally {
       setEditLoading(false)
     }
