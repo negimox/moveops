@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { requireRole } from '@/lib/rbac'
 import { getAllDrivers, createDriver } from '@/lib/queries/drivers'
-import { verifyDrivingLicense } from '@/lib/setuApi'
 
 export async function GET() {
   try {
@@ -32,24 +31,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Call the external Setu API to verify license before saving
-    let setuResponse
-    try {
-      setuResponse = await verifyDrivingLicense(data.license_id)
-    } catch (setuError: any) {
-      return NextResponse.json({ error: setuError.message || 'Failed to verify license with Setu API' }, { status: 400 })
-    }
-
-    let licenseExpiry = null
-    if (setuResponse?.document?.validTo) {
-      licenseExpiry = setuResponse.document.validTo
-    }
-
     const driver = await createDriver({
       ...data,
       registered_by: user.id,
-      licenseData: setuResponse,
-      licenseExpiry
+      licenseData: null,
+      licenseExpiry: null
     })
 
     return NextResponse.json({ driver }, { status: 201 })
@@ -63,3 +49,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
