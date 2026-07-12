@@ -1,61 +1,68 @@
-import { Pool, type QueryResultRow } from 'pg';
+/**
+ * lib/db.ts
+ * PostgreSQL connection pool using node-postgres (pg).
+ *
+ * WHY a pool? A single connection blocks; a pool allows multiple simultaneous
+ * queries without opening a new TCP connection on every request — critical
+ * for Next.js serverless-style route handlers which can fire concurrently.
+ *
+ * We export a single `pool` instance. Importing this module multiple times in
+ * a Next.js dev-mode reload creates multiple pools, so we attach it to the
+ * global object to avoid exhausting connections during hot-reload.
+ */
 
-if (!process.env.DATABASE_URL) {
-  console.warn('[DB] DATABASE_URL is not set. Database queries will fail.');
-}
+import { Pool, QueryResultRow } from 'pg'
 
-// Singleton pool — Next.js hot-reload safe via global
+// Extend the NodeJS global to hold our pool between hot-reloads
 declare global {
   // eslint-disable-next-line no-var
-  var _pgPool: Pool | undefined;
+  var _pgPool: Pool | undefined
 }
 
-const pool: Pool =
-  global._pgPool ??
-  new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
-  });
+function createPool(): Pool {
+  // Remove all query params (like ?sslmode=require) so they don't override the explicit ssl object below
+  const connectionString = process.env.DATABASE_URL?.split('?')[0]
 
-if (process.env.NODE_ENV !== 'production') {
-  global._pgPool = pool;
+  if (!connectionString) {
+    throw new Error(
+      'DATABASE_URL is not set. Add it to .env.local — see .env.local for the format.'
+    )
+  }
+
+  return new Pool({
+    connectionString,
+    max: 10,           // maximum number of clients in the pool
+    idleTimeoutMillis: 30_000,  // close idle clients after 30 s
+    connectionTimeoutMillis: 5_000, // fail fast if DB is unreachable
+    ssl: process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false } // Change based on prod security needs
+      : { rejectUnauthorized: false }, // Dev: bypass self-signed cert issues (e.g. AWS RDS)
+  })
 }
 
-pool.on('error', (err) => {
-  console.error('[DB] Unexpected pool error:', err.message);
-});
+// In development, reuse across hot-reloads. In production, always fresh.
+export const pool: Pool =
+  process.env.NODE_ENV === 'production'
+    ? createPool()
+    : (globalThis._pgPool ??= createPool())
 
 /**
- * Run a parameterized query against the PostgreSQL database.
- * Automatically initializes the vehicle_documents table on first use.
+ * Convenience helper — run a single parameterised query.
+ *
+ * Usage:
+ *   const { rows } = await query('SELECT * FROM users WHERE id = $1', [userId])
  */
-export const query = <T extends QueryResultRow = QueryResultRow>(
+export async function query<T extends QueryResultRow = Record<string, unknown>>(
   text: string,
   params?: unknown[]
-) => pool.query<T>(text, params);
+) {
+  const start = Date.now()
+  const result = await pool.query<T>(text, params)
+  const duration = Date.now() - start
 
-export default pool;
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[DB]', { text: text.slice(0, 80), duration, rows: result.rowCount })
+  }
 
-/**
- * Bootstrap the vehicle_documents table if it doesn't exist yet.
- * Called from API routes on first request so no manual migration is needed.
- */
-export async function ensureDocumentsTable() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS vehicle_documents (
-      id          SERIAL PRIMARY KEY,
-      vehicle_id  VARCHAR(50)  NOT NULL,
-      doc_name    VARCHAR(255) NOT NULL,
-      doc_type    VARCHAR(100) NOT NULL DEFAULT 'Other',
-      ref_number  VARCHAR(255),
-      expiry_date DATE,
-      notes       TEXT,
-      created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
-    );
-    CREATE INDEX IF NOT EXISTS idx_vehicle_docs_vehicle_id
-      ON vehicle_documents (vehicle_id);
-  `);
+  return result
 }
