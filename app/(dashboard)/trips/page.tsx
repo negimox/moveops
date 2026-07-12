@@ -185,9 +185,10 @@ export default function TripsPage() {
       },
       cell: ({ row }) => {
         const status = row.getValue("status") as Trip["status"]
+        const config = statusConfig[status] ?? { color: 'text-muted-foreground bg-muted border-border', label: status ?? 'Unknown' }
         return (
-          <Badge variant="outline" className={`inline-flex px-2.5 py-1 text-xs font-medium border rounded-full ${statusConfig[status].color}`}>
-            {statusConfig[status].label}
+          <Badge variant="outline" className={`inline-flex px-2.5 py-1 text-xs font-medium border rounded-full ${config.color}`}>
+            {config.label}
           </Badge>
         )
       },
