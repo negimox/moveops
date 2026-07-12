@@ -36,10 +36,10 @@ const ALL_NAV: NavItem[] = [
 ]
 
 const NAV_BY_ROLE: Record<UserRole, string[]> = {
-  fleet_manager:     ['Dashboard', 'Fleet', 'Maintenance'],
-  dispatcher:        ['Dashboard', 'Trips'],
-  safety_officer:    ['Dashboard', 'Drivers', 'Trips'],
-  financial_analyst: ['Dashboard', 'Fuel & Expenses', 'Analytics'],
+  fleet_manager:     ['Dashboard', 'Fleet', 'Maintenance', 'Settings'],
+  dispatcher:        ['Dashboard', 'Trips', 'Settings'],
+  safety_officer:    ['Dashboard', 'Drivers', 'Trips', 'Settings'],
+  financial_analyst: ['Dashboard', 'Fuel & Expenses', 'Analytics', 'Settings'],
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {

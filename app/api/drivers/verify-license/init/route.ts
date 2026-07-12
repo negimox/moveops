@@ -11,15 +11,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const { driverId } = await request.json()
-
-    if (!driverId) {
-      return NextResponse.json({ error: 'Driver ID is required' }, { status: 400 })
-    }
+    const data = await request.json().catch(() => ({}))
+    const driverId = data.driverId
 
     // Set redirect URL to our drivers page with query params indicating success
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    const redirectUrl = `${appUrl}/drivers?driverId=${driverId}&setu_verify=success`
+    const redirectUrl = driverId 
+      ? `${appUrl}/drivers?driverId=${driverId}&setu_verify=success`
+      : `${appUrl}/drivers?setu_verify_new=success`
 
     // Call the external Setu API to create a session
     const setuResponse = await createDigilockerRequest(redirectUrl)

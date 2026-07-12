@@ -30,20 +30,24 @@ export default function AddDriverModal({ isOpen, onClose, onSuccess }: AddDriver
     }
 
     try {
-      const res = await fetch('/api/drivers', {
+      const initRes = await fetch('/api/drivers/verify-license/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({}), // no driverId yet
       })
-      const result = await res.json()
+      const initData = await initRes.json()
 
-      if (!res.ok) throw new Error(result.error || 'Failed to register driver')
+      if (!initRes.ok) throw new Error(initData.error || 'Failed to initiate verification')
+
+      // Save pending driver data and request ID to localStorage
+      localStorage.setItem('setu_request_id', initData.id)
+      localStorage.setItem('setu_new_driver_data', JSON.stringify(data))
+
+      // Redirect to Setu for DigiLocker verification
+      window.location.href = initData.url
       
-      onSuccess()
-      handleModalClose()
     } catch (err: any) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }

@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS drivers             CASCADE;
 DROP TABLE IF EXISTS vehicles            CASCADE;
 DROP TABLE IF EXISTS roles               CASCADE;
 DROP TABLE IF EXISTS users               CASCADE;
+DROP TABLE IF EXISTS depot_settings      CASCADE;
 
 -- ─── Drop ENUM types ───────────────────────────────────────
 DROP TYPE IF EXISTS user_role          CASCADE;
@@ -329,6 +330,35 @@ INSERT INTO drivers (name, contact, license_id, license_verified, license_expiry
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     NULL);
 
+-- ── Additional driver: Shwet (DigiLocker-verified, license_data from Setu API) ──
+INSERT INTO drivers (
+  name, contact, license_id, license_verified, license_expiry,
+  license_data, category, status, trip_count, safety,
+  registered_by, approved_by,
+  created_at, updated_at
+) VALUES (
+  'Shwet',
+  '91902101209',
+  'adsadsd',
+  TRUE,
+  '2026-07-19',                    -- license_expiry from validUpto field
+  '{
+    "s3Key": "licenses/b5a1dc5c-01ba-4d88-9a23-ae2a92739222.pdf",
+    "fileUrl": "https://dg-sandbox.s3.amazonaws.com/a1104ec4-7be7-4c70-af78-f5fa72183c6a/digi-d6acd5fb-3ba8-418a-be37-f661a28b3754.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIA6GJ2FQNTKW65EN6L%2F20260712%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260712T111525Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEBYaCmFwLXNvdXRoLTEiSDBGAiEA%2FVRpUrhXyAtDJc5Q3gDQm0jU8U5QEYAtqBI6OslY72UCIQCcN3wq9Js%2FsvyLNTrXdsNtjwloqKZ3G%2Ff%2BdmMySg7XeiqJBAjf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAMaDDk3NTYxNjQ0MzIzOCIMSuxlIrKZTyQFB%2BQTKt0D6k9tUSqFrXJEvjUEQLN5DAG4vfSez8fFxYcO4WrLSEBqOsFyzrPVyVeEHJb4aqTh7YAUe31gAWuTz0zy2LiVncmntPfu2haPzpiDzllmTEj1ypf2LtyFoFljHbI1GLOZf%2FQTfjikVpYslj9NIfcd%2BFC8YskULrjW46znU7ebUgwoKtLGu3KrhF3bIL5YDknRTFQcdItWy9B9nnCjR7G5xcQcVjXzxiRXOCNJDyDORE73uX00JXDCi8nplVEw3DD0o%2FAatJtzyaAwjUSPU%2BBCNhHrYIk%2BCjhnxvOgwZ2qvFGfMHYk4okjwoXxvxwZSzbL4CXzYs55fZofT1WFbFPRgS%2BoogRRDBV5u8mfxmEARMz1R8kty0FCqk%2B22zlAVIXMWmuDETtuZEpF9tgZ%2FdwI9EKgv0tVSjzu6iQiaOB86QIXRGQOhZ7au4alGR9nvPIuMxgF0JfYHvBiO4mm6Bnj4499ZYd7webl8ezHxnDPUzIGHC1%2F1O7t2KlraXABrD5RO7yKAZIFcMY7oKqMwKz7nVflmpeXNsqJykRCWg5uiR4%2BynjvsCaV3UG%2BTlWOsJyeTNukq9yPoPcqKDhWsZYRW9Dg%2BIS6FqePAAPZXhOG7Rwtrvcik8ZPX9hZ2jiTMJjgzNIGOqQBpVvbyCYEXnm81%2BSK0TwmDHcv0daZ0aw7GZMUgb0n0LqBYYJSEHGqg3ub81Iy8xvDVKHOVTgKMiv67kQihMz%2BXIDZRN8aQ7ChvNS5f0RMxpLjezDc2bVT5CjEDCy5yh0x7Q4uk1sVQAD7H82uyn%2BLf2dD7ugUJAcw0nS21KXoeWPpPLZFjiCMlDWpt9dl96LH%2B9LMiBMwfKxa85w3wAZcST%2F1%2FCE%3D&X-Amz-Signature=5bb07c018066c1b0e1544afdd5ba0487b0f2d051cc5ca29755054ea987ac9fe3",
+    "traceId": "1-6a53774c-415c41815a33b1eb700e8baa",
+    "validUpto": "2026-07-19T16:45:25+05:30"
+  }'::jsonb,
+  'LMV',
+  'available',
+  0,
+  'available',
+  NULL,    -- registered_by (no safety officer linked)
+  NULL,    -- approved_by
+  '2026-07-12T11:15:26.740Z'::TIMESTAMPTZ,
+  '2026-07-12T11:15:26.740Z'::TIMESTAMPTZ
+);
+
+
 -- ============================================================
 -- Seed: trips  (Dispatcher domain)
 -- Uses subqueries so IDs never need to be hard-coded.
@@ -551,3 +581,31 @@ INSERT INTO expenses (category, amount, vehicle_id, trip_id, description, logged
    'Loading/unloading labour charges — Bengaluru depot.',
    CURRENT_DATE + 1,
    (SELECT id FROM users WHERE email = 'finance@transitops.in'));
+
+-- ============================================================
+-- Entity 9: depot_settings
+-- Singleton row (id = 1) holding global depot configuration.
+-- Editable by Fleet Manager via the Settings page.
+-- currency is stored as the ISO code, e.g. 'INR'.
+-- distance_unit is one of: 'Kilometer', 'Meter', 'Inch'.
+-- ============================================================
+
+CREATE TABLE depot_settings (
+  id            INTEGER      PRIMARY KEY DEFAULT 1 CHECK (id = 1),  -- enforce singleton
+  depot_name    VARCHAR(150) NOT NULL DEFAULT 'TransitOps Depot',
+  currency      VARCHAR(10)  NOT NULL DEFAULT 'INR',                -- ISO code
+  distance_unit VARCHAR(20)  NOT NULL DEFAULT 'Kilometer'
+    CHECK (distance_unit IN ('Kilometer', 'Meter', 'Inch')),
+  updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_by    INTEGER      REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Seed: one default depot settings row
+INSERT INTO depot_settings (id, depot_name, currency, distance_unit, updated_by)
+VALUES (
+  1,
+  'Mumbai Central Depot',
+  'INR',
+  'Kilometer',
+  (SELECT id FROM users WHERE email = 'fleet@transitops.in')
+);

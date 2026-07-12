@@ -21,7 +21,9 @@ export interface Driver extends QueryResultRow {
 
 export async function getAllDrivers() {
   const result = await query<Driver>(`
-    SELECT * FROM drivers
+    SELECT 
+      *
+    FROM drivers
     ORDER BY status, name
   `)
   return result.rows
