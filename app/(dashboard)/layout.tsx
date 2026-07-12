@@ -1,10 +1,11 @@
 /**
  * app/(dashboard)/layout.tsx
- * Dashboard shell layout — dark sidebar + white content area.
+ * Dashboard shell layout — dark sidebar + content area + AI Copilot.
  * All pages inside /(dashboard)/ inherit this layout.
  */
 
 import Sidebar from '@/components/ui/Sidebar'
+import AICopilot from '@/components/ai/AICopilot'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -22,6 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {children}
       </main>
+      <AICopilot />
     </div>
   )
 }

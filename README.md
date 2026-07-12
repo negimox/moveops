@@ -2,6 +2,7 @@
   <img src="https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
   <img src="https://img.shields.io/badge/PostgreSQL-17-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/AWS_Bedrock-Claude_Haiku_4.5-FF9900?style=for-the-badge&logo=amazon-web-services&logoColor=white" />
   <img src="https://img.shields.io/badge/JWT-Auth-000?style=for-the-badge&logo=jsonwebtokens" />
   <img src="https://img.shields.io/badge/Aiven-Cloud_DB-FF5733?style=for-the-badge" />
 </p>
@@ -33,8 +34,14 @@ graph TB
     subgraph Server["⚙️ Next.js Server"]
         AUTH["Auth Routes<br/>login · logout · me"]
         API["API Route Handlers<br/>vehicles · drivers · trips<br/>maintenance · fuel · expenses<br/>dashboard · analytics"]
+        AI["🤖 AI Copilot API<br/>/api/ai/chat"]
         LIB["lib/<br/>auth.ts · db.ts · rbac.ts"]
         QRY["lib/queries/<br/>vehicles.ts · drivers.ts<br/>trips.ts · maintenance.ts<br/>fuel.ts · expenses.ts"]
+        AILIB["lib/ai/<br/>bedrock.ts · safe-query.ts<br/>system-prompt.ts · tools.ts"]
+    end
+
+    subgraph Bedrock["🧠 AWS Bedrock — Mumbai (ap-south-1)"]
+        CLAUDE["Claude Haiku 4.5<br/>Tool Use (function calling)"]
     end
 
     subgraph DB_Layer["🗄️ PostgreSQL — Aiven Cloud"]
@@ -46,6 +53,10 @@ graph TB
     MW -->|"❌ No token"| LP
     AUTH --> LIB
     API --> LIB
+    AI --> AILIB
+    AILIB -->|"Converse API"| CLAUDE
+    CLAUDE -->|"tool_use: query_database"| AILIB
+    AILIB -->|"safe SQL"| TABLES
     LIB --> QRY
     QRY -->|"SQL queries"| TABLES
 
@@ -53,6 +64,7 @@ graph TB
     style Edge fill:#1e1e2e,stroke:#f38ba8,color:#cdd6f4
     style Server fill:#1e1e2e,stroke:#a6e3a1,color:#cdd6f4
     style DB_Layer fill:#1e1e2e,stroke:#fab387,color:#cdd6f4
+    style Bedrock fill:#1e1e2e,stroke:#f9e2af,color:#cdd6f4
 ```
 
 ---
@@ -448,6 +460,126 @@ graph LR
 
 ---
 
+## 🤖 AI Ops Copilot — Powered by AWS Bedrock
+
+A natural-language chat sidebar that queries the **live PostgreSQL database** in real-time. Users ask questions in plain English — the AI writes SQL, executes it safely, and responds with formatted insights.
+
+### How It Works
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant UI as Chat Sidebar
+    participant API as /api/ai/chat
+    participant BR as AWS Bedrock (ap-south-1)
+    participant CL as Claude Haiku 4.5
+    participant DB as PostgreSQL
+
+    U->>UI: "Best driver for a 5000kg load?"
+    UI->>API: POST { message, history }
+    API->>API: Auth check + build system prompt
+    API->>BR: Converse API (messages + tools)
+    BR->>CL: Process with tool definitions
+
+    CL->>CL: Decides to call query_database
+    CL-->>API: tool_use: { sql: "SELECT ..." }
+    API->>API: safe-query.ts validates (read-only)
+    API->>DB: Execute in READ ONLY transaction
+    DB-->>API: Result rows
+    API->>CL: tool_result with data
+    CL-->>API: Formatted answer + recommendation
+    API-->>UI: Response with markdown tables
+    UI-->>U: "🥇 TRUCK-21 — Driver: Manish, safety 91"
+```
+
+### Key Features
+
+| Feature | Detail |
+|---|---|
+| **Natural Language → SQL** | Claude generates accurate SQL from plain English questions |
+| **Read-Only Safety Layer** | `safe-query.ts` blocks INSERT/UPDATE/DELETE/DROP — only SELECT allowed |
+| **Role-Aware** | System prompt adapts to user's role — dispatchers get trip-focused answers, analysts get cost-focused |
+| **Live Database** | Queries real data, not mock data. Numbers are always current |
+| **Markdown Tables** | Responses render with formatted tables, bold text, and recommendations |
+| **Multi-Turn Context** | Maintains conversation history for follow-up questions |
+
+### Example Conversations
+
+**Dispatcher asks:**
+> "Available vehicles for a 4000kg shipment?"
+
+**AI responds:**
+> Based on available vehicles with sufficient capacity:
+>
+> | Vehicle | Model | Capacity | Status | Cost/km |
+> |---|---|---|---|---|
+> | TRUCK-21 | BharatBenz 3528R | 8000kg | 🟢 Available | ₹14.50 |
+> | BUS-03 | Tata Starbus | 2000kg | 🟢 Available | ❌ Under capacity |
+>
+> **🥇 Recommended: TRUCK-21** — 50% capacity utilization at 4000kg, lowest operating cost.
+
+**Financial Analyst asks:**
+> "Which vehicle has the highest fuel cost?"
+
+**AI responds with a live query from fuel_logs, ranked by total cost.**
+
+### Safety Architecture
+
+```mermaid
+graph LR
+    Q["User Question"] --> CL["Claude Haiku 4.5"]
+    CL -->|"tool_use"| SQ["safe-query.ts"]
+
+    subgraph Validation["🛡️ SQL Safety Layer"]
+        V1["✅ Starts with SELECT/WITH"]
+        V2["❌ Blocks INSERT, UPDATE, DELETE"]
+        V3["❌ Blocks DROP, ALTER, TRUNCATE"]
+        V4["❌ Blocks password_hash access"]
+        V5["✅ Adds LIMIT 50 if missing"]
+        V6["✅ 5-second query timeout"]
+        V7["✅ READ ONLY transaction"]
+    end
+
+    SQ --> Validation
+    Validation -->|"Safe"| DB[("PostgreSQL")]
+    Validation -->|"Blocked"| ERR["Error returned to Claude"]
+
+    style Validation fill:#1e1e2e,stroke:#ef4444,color:#cdd6f4
+```
+
+### UI Wireframe
+
+```
+┌──────────────────────────────────┬──────────────────────┐
+│  [Current Dashboard Page]        │  🤖 AI Copilot    ✕  │
+│                                  │                      │
+│                                  │  ┌────────────────┐  │
+│                                  │  │ 🤖 Hi, Piyush! │  │
+│                                  │  │ I can query     │  │
+│                                  │  │ your live fleet │  │
+│                                  │  │ database.       │  │
+│                                  │  └────────────────┘  │
+│                                  │                      │
+│                                  │  Try asking:         │
+│                                  │  ┌────────────────┐  │
+│                                  │  │🚗 Fleet status  │  │
+│                                  │  │   overview      │  │
+│                                  │  ├────────────────┤  │
+│                                  │  │👤 Best driver   │  │
+│                                  │  │   for 3000kg    │  │
+│                                  │  ├────────────────┤  │
+│                                  │  │⛽ Fuel spend    │  │
+│                                  │  │   this week     │  │
+│                                  │  └────────────────┘  │
+│                                  │                      │
+│                                  │  ┌──────────┐ ┌───┐  │
+│                                  │  │ Ask me...│ │ ➤ │  │
+│                                  │  └──────────┘ └───┘  │
+└──────────────────────────────────┴──────────────────────┘
+```
+
+---
+
 ## ✅ Build Progress
 
 ```mermaid
@@ -467,23 +599,31 @@ gantt
     Dashboard Shell                :done, p1h, 0, 1
     Vehicles Queries + API         :done, p1i, 0, 1
 
+    section AI Copilot ✅
+    Bedrock Client + Converse API  :done, ai1, 1, 2
+    System Prompt + Schema Context :done, ai2, 1, 2
+    SQL Safety Layer               :done, ai3, 1, 2
+    Chat API Route                 :done, ai4, 1, 2
+    Chat Sidebar UI + Streaming    :done, ai5, 1, 2
+    Role-Based Suggestions         :done, ai6, 1, 2
+
     section Phase 2 — CRUD Pages 🔄
-    Fleet Page (list/create/edit)  :active, p2a, 1, 2
-    Drivers Queries + API          :p2b, 1, 2
-    Drivers Page                   :p2c, 1, 2
-    Maintenance Queries + API      :p2d, 1, 2
-    Maintenance Page               :p2e, 1, 2
+    Fleet Page (list/create/edit)  :active, p2a, 2, 3
+    Drivers Queries + API          :p2b, 2, 3
+    Drivers Page                   :p2c, 2, 3
+    Maintenance Queries + API      :p2d, 2, 3
+    Maintenance Page               :p2e, 2, 3
 
     section Phase 3 — Trip Engine 🔜
-    Trip Queries + Business Rules  :p3a, 2, 3
-    Trip API (dispatch/complete/cancel) :p3b, 2, 3
-    Trips Page + Action Buttons    :p3c, 2, 3
+    Trip Queries + Business Rules  :p3a, 3, 4
+    Trip API (dispatch/complete/cancel) :p3b, 3, 4
+    Trips Page + Action Buttons    :p3c, 3, 4
 
     section Phase 4 — Finance & Reports 🔜
-    Fuel + Expense API + Page      :p4a, 3, 4
-    Dashboard KPIs (live data)     :p4b, 3, 4
-    Analytics + Charts             :p4c, 3, 4
-    CSV Export                     :p4d, 3, 4
+    Fuel + Expense API + Page      :p4a, 4, 5
+    Dashboard KPIs (live data)     :p4b, 4, 5
+    Analytics + Charts             :p4c, 4, 5
+    CSV Export                     :p4d, 4, 5
 ```
 
 ### Checklist
@@ -498,6 +638,8 @@ gantt
 - [x] `StatusBadge` — color-coded state pills
 - [x] Vehicle queries — `getAllVehicles`, `createVehicle`, `updateVehicle`, `deleteVehicle`
 - [x] Vehicles API — `GET/POST /api/vehicles` · `GET/PUT/DELETE /api/vehicles/[id]`
+- [x] **AI Copilot** — Bedrock client, system prompt, SQL safety layer, chat API
+- [x] **AI Chat UI** — sidebar panel, message bubbles, markdown rendering, role-based suggestions
 - [ ] Fleet page — list view + create/edit modal
 - [ ] Drivers — queries + API + page
 - [ ] Trips — queries + API + page with action buttons
@@ -568,7 +710,15 @@ npm install
 cp .example.env .env.local
 ```
 
-Set `DATABASE_URL` and `JWT_SECRET` in `.env.local`.
+Set these in `.env.local`:
+```env
+DATABASE_URL=postgresql://...        # PostgreSQL connection string
+JWT_SECRET=your-secret-key            # Random 32-byte string
+AWS_ACCESS_KEY_ID=AKIA...            # AWS credentials for Bedrock
+AWS_SECRET_ACCESS_KEY=...             # AWS secret key
+AWS_REGION=ap-south-1                 # Mumbai region
+BEDROCK_MODEL_ID=global.anthropic.claude-haiku-4-5-20251001-v1:0
+```
 
 ### 3. Initialize Database
 
@@ -621,14 +771,19 @@ moveops/
 │   │
 │   ├── api/                       ← Backend route handlers
 │   │   ├── auth/                  ← ✅ login · logout · me
-│   │   └── vehicles/              ← ✅ list · create · get · update · delete
+│   │   ├── vehicles/              ← ✅ list · create · get · update · delete
+│   │   └── ai/chat/route.ts       ← ✅ AI Copilot API endpoint
 │   │
-│   ├── globals.css                ← Design tokens & theme
+│   ├── globals.css                ← Design tokens & theme + AI animations
 │   ├── layout.tsx                 ← Root layout
 │   └── page.tsx                   ← Landing redirect
 │
 ├── components/
 │   ├── auth/LoginForm.tsx         ← ✅ Styled login form
+│   ├── ai/                        ← ✅ AI Copilot UI
+│   │   ├── AICopilot.tsx          ← Floating sidebar panel
+│   │   ├── ChatMessage.tsx        ← Message bubbles + markdown
+│   │   └── SuggestedQuestions.tsx  ← Role-based starter prompts
 │   └── ui/
 │       ├── Sidebar.tsx            ← ✅ Role-aware navigation
 │       └── StatusBadge.tsx        ← ✅ Color-coded status pills
@@ -637,6 +792,11 @@ moveops/
 │   ├── auth.ts                    ← ✅ JWT sign/verify + cookies
 │   ├── db.ts                      ← ✅ PostgreSQL pool
 │   ├── rbac.ts                    ← ✅ Permission matrix
+│   ├── ai/                        ← ✅ AI Engine
+│   │   ├── bedrock.ts             ← Bedrock Converse API client
+│   │   ├── system-prompt.ts       ← Schema-aware prompt builder
+│   │   ├── tools.ts               ← Tool definitions for Claude
+│   │   └── safe-query.ts          ← SQL validator + read-only executor
 │   └── queries/
 │       └── vehicles.ts            ← ✅ Vehicle CRUD queries
 │
@@ -687,6 +847,9 @@ graph TD
 | **Auth** | `jose` JWT + `bcryptjs` | Edge-compatible, HTTP-only cookies |
 | **Database** | PostgreSQL (Aiven Cloud) | ACID transactions, ENUM types |
 | **DB Client** | `node-postgres` (pg) | Connection pooling, parameterized queries |
+| **AI Engine** | AWS Bedrock — Claude Haiku 4.5 | Converse API + tool_use for SQL generation |
+| **AI Region** | `ap-south-1` (Mumbai) | Low latency from India |
+| **AI Safety** | `safe-query.ts` | Read-only SQL validation + execution |
 | **Validation** | Server-side in route handlers | Business rules can't be bypassed |
 | **Export** | JSON → CSV (`exportService.js`) | Mandatory per spec |
 

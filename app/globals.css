@@ -157,3 +157,26 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ─── AI Copilot Animations ───────────────────────────────────────────── */
+@keyframes ai-pulse {
+  0%, 100% { box-shadow: 0 4px 24px rgba(79,70,229,0.4), 0 0 0 0 rgba(79,70,229,0.3); }
+  50% { box-shadow: 0 4px 24px rgba(79,70,229,0.4), 0 0 0 8px rgba(79,70,229,0); }
+}
+
+@keyframes ai-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.ai-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  animation: ai-dot-bounce 1.2s ease-in-out infinite;
+}
+.ai-dot-1 { animation-delay: 0s; }
+.ai-dot-2 { animation-delay: 0.15s; }
+.ai-dot-3 { animation-delay: 0.3s; }
