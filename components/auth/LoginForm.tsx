@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 /**
  * components/auth/LoginForm.tsx
@@ -9,251 +9,315 @@
  *   - Clear, friendly error messages — no crashes on bad input
  */
 
-import { useState, FormEvent } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // ─── Role info for the info panel ──────────────────────────────────────────
 
 const ROLES = [
-  { label: 'Fleet Manager',     color: '#4f46e5', icon: '🚌', desc: 'Full access' },
-  { label: 'Dispatcher',        color: '#06b6d4', icon: '📋', desc: 'Trips + Drivers' },
-  { label: 'Safety Officer',    color: '#f59e0b', icon: '🛡️', desc: 'Safety + Maintenance' },
-  { label: 'Financial Analyst', color: '#10b981', icon: '📊', desc: 'Reports + Expenses' },
-]
+  { label: "Fleet Manager", color: "#4f46e5", icon: "🚌", desc: "Full access" },
+  {
+    label: "Dispatcher",
+    color: "#06b6d4",
+    icon: "📋",
+    desc: "Trips + Drivers",
+  },
+  {
+    label: "Safety Officer",
+    color: "#f59e0b",
+    icon: "🛡️",
+    desc: "Safety + Maintenance",
+  },
+  {
+    label: "Financial Analyst",
+    color: "#10b981",
+    icon: "📊",
+    desc: "Reports + Expenses",
+  },
+];
 
 // ─── Validation helpers ────────────────────────────────────────────────────
 
 function validateEmail(v: string) {
-  if (!v.trim()) return 'Email is required.'
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Enter a valid email address.'
-  return ''
+  if (!v.trim()) return "Email is required.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
+    return "Enter a valid email address.";
+  return "";
 }
 
 function validatePassword(v: string) {
-  if (!v) return 'Password is required.'
-  if (v.length < 6) return 'Password must be at least 6 characters.'
-  return ''
+  if (!v) return "Password is required.";
+  if (v.length < 6) return "Password must be at least 6 characters.";
+  return "";
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
 export default function LoginForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('from') ?? '/dashboard'
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("from") ?? "/dashboard";
 
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [emailErr, setEmailErr] = useState('')
-  const [passErr, setPassErr]   = useState('')
-  const [apiError, setApiError] = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailErr, setEmailErr] = useState("");
+  const [passErr, setPassErr] = useState("");
+  const [apiError, setApiError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Validate on blur so the user isn't nagged while typing
-  const handleEmailBlur = () => setEmailErr(validateEmail(email))
-  const handlePassBlur  = () => setPassErr(validatePassword(password))
+  const handleEmailBlur = () => setEmailErr(validateEmail(email));
+  const handlePassBlur = () => setPassErr(validatePassword(password));
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    setApiError('')
+    e.preventDefault();
+    setApiError("");
 
     // Final validation before submit
-    const eErr = validateEmail(email)
-    const pErr = validatePassword(password)
-    setEmailErr(eErr)
-    setPassErr(pErr)
-    if (eErr || pErr) return
+    const eErr = validateEmail(email);
+    const pErr = validatePassword(password);
+    setEmailErr(eErr);
+    setPassErr(pErr);
+    if (eErr || pErr) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
-      })
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (!res.ok) {
-        setApiError(data.error ?? 'Login failed. Please try again.')
-        return
+        setApiError(data.error ?? "Login failed. Please try again.");
+        return;
       }
 
       // Success — navigate to the intended page
-      router.push(redirectTo)
-      router.refresh()
+      router.push(redirectTo);
+      router.refresh();
     } catch {
-      setApiError('Network error. Please check your connection.')
+      setApiError("Network error. Please check your connection.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start', width: '100%', maxWidth: '900px', padding: '24px' }}>
-
+    <div className="flex flex-col md:flex-row gap-8 items-start w-full max-w-[900px] p-6 mx-auto">
       {/* ── Left: Login card ────────────────────────────────────────── */}
-      <div className="card" style={{ flex: '0 0 380px', padding: '40px', borderRadius: '16px' }}>
-
-        {/* Logo */}
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '10px',
-            padding: '8px 14px', borderRadius: '10px',
-            background: 'rgba(79,70,229,0.1)', marginBottom: '24px',
-          }}>
-            <span style={{ fontSize: '20px' }}>🚌</span>
-            <span style={{ fontWeight: 700, fontSize: '16px', color: '#4f46e5', letterSpacing: '-0.3px' }}>
-              TransitOps
-            </span>
-          </div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Sign in to your account
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-            Enter your credentials to continue
-          </p>
-        </div>
-
-        {/* API Error Banner */}
-        {apiError && (
-          <div style={{
-            display: 'flex', alignItems: 'flex-start', gap: '8px',
-            padding: '10px 12px', borderRadius: '8px', marginBottom: '20px',
-            background: '#fef2f2', border: '1px solid #fecaca',
-          }}>
-            <span style={{ fontSize: '15px', flexShrink: 0 }}>⚠️</span>
-            <p style={{ fontSize: '13px', color: '#b91c1c', lineHeight: 1.4 }}>{apiError}</p>
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-
-          {/* Email */}
-          <div>
-            <label className="label" htmlFor="login-email">Email</label>
-            <input
-              id="login-email"
-              className="input"
-              type="email"
-              placeholder="you@transitops.in"
-              value={email}
-              onChange={e => { setEmail(e.target.value); if (emailErr) setEmailErr('') }}
-              onBlur={handleEmailBlur}
-              autoComplete="email"
-              style={emailErr ? { borderColor: '#ef4444' } : {}}
-            />
-            {emailErr && (
-              <p style={{ fontSize: '12px', color: '#ef4444', marginTop: '4px' }}>{emailErr}</p>
-            )}
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className="label" htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              className="input"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => { setPassword(e.target.value); if (passErr) setPassErr('') }}
-              onBlur={handlePassBlur}
-              autoComplete="current-password"
-              style={passErr ? { borderColor: '#ef4444' } : {}}
-            />
-            {passErr && (
-              <p style={{ fontSize: '12px', color: '#ef4444', marginTop: '4px' }}>{passErr}</p>
-            )}
-          </div>
-
-          {/* Submit */}
-          <button
-            id="login-submit-btn"
-            type="submit"
-            className="btn-primary"
-            disabled={loading}
-            style={{ justifyContent: 'center', padding: '11px', fontSize: '14px', marginTop: '4px' }}
-          >
-            {loading ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                <LoadingSpinner />
-                Signing in…
+      <Card className="flex-none w-[380px] p-6 rounded-2xl shadow-xl">
+        <CardHeader className="px-0 pt-0 pb-6">
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-primary/10 mb-6">
+              <span className="text-xl">🚌</span>
+              <span className="font-bold text-base text-primary tracking-tight">
+                TransitOps
               </span>
-            ) : 'Sign In'}
-          </button>
-        </form>
+            </div>
+            <CardTitle className="text-2xl font-bold mb-1.5">
+              Sign in to your account
+            </CardTitle>
+            <CardDescription className="text-[13px]">
+              Enter your credentials to continue
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="px-0 pb-0">
+          {/* API Error Banner */}
+          {apiError && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "8px",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                marginBottom: "20px",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+              }}
+            >
+              <span style={{ fontSize: "15px", flexShrink: 0 }}>⚠️</span>
+              <p
+                style={{ fontSize: "13px", color: "#b91c1c", lineHeight: 1.4 }}
+              >
+                {apiError}
+              </p>
+            </div>
+          )}
 
-        {/* Demo credentials hint */}
-        <div style={{
-          marginTop: '24px', padding: '12px', borderRadius: '8px',
-          background: 'var(--bg-base)', border: '1px solid var(--border)',
-        }}>
-          <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Demo Credentials
-          </p>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-            <strong>Fleet:</strong> fleet@transitops.in<br />
-            <strong>Dispatch:</strong> dispatch@transitops.in<br />
-            <strong>Safety:</strong> safety@transitops.in<br />
-            <strong>Finance:</strong> finance@transitops.in<br />
-            <span style={{ color: 'var(--text-muted)' }}>Password for all: <strong>Password@123</strong></span>
-          </p>
-        </div>
-      </div>
+          {/* Form */}
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            style={{ display: "flex", flexDirection: "column", gap: "18px" }}
+          >
+            {/* Email */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium" htmlFor="login-email">
+                Email
+              </label>
+              <Input
+                id="login-email"
+                type="email"
+                placeholder="you@transitops.in"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailErr) setEmailErr("");
+                }}
+                onBlur={handleEmailBlur}
+                autoComplete="email"
+                className={emailErr ? "border-destructive" : ""}
+              />
+              {emailErr && (
+                <p className="text-xs text-destructive mt-1">{emailErr}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium" htmlFor="login-password">
+                Password
+              </label>
+              <Input
+                id="login-password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passErr) setPassErr("");
+                }}
+                onBlur={handlePassBlur}
+                autoComplete="current-password"
+                className={passErr ? "border-destructive" : ""}
+              />
+              {passErr && (
+                <p className="text-xs text-destructive mt-1">{passErr}</p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <Button
+              id="login-submit-btn"
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2"
+            >
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <LoadingSpinner />
+                  Signing in…
+                </span>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </form>
+
+          {/* Demo credentials hint */}
+          <div className="mt-6 p-3 rounded-lg bg-muted border border-border">
+            <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
+              Demo Credentials
+            </p>
+            <p className="text-xs leading-relaxed">
+              <strong>Fleet:</strong> fleet@transitops.in
+              <br />
+              <strong>Dispatch:</strong> dispatch@transitops.in
+              <br />
+              <strong>Safety:</strong> safety@transitops.in
+              <br />
+              <strong>Finance:</strong> finance@transitops.in
+              <br />
+              <span className="text-muted-foreground">
+                Password for all: <strong>Password@123</strong>
+              </span>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ── Right: Role info panel ──────────────────────────────────── */}
-      <div style={{ flex: 1, paddingTop: '12px' }}>
-        <p style={{ fontSize: '12px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '16px' }}>
+      <div className="flex-1 w-full pt-4 md:pt-0">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">
           One login. Four roles.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {ROLES.map(role => (
-            <div key={role.label} style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '12px 16px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              transition: 'background var(--transition)',
-            }}>
-              <span style={{
-                width: '36px', height: '36px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                borderRadius: '8px', fontSize: '18px',
-                background: `${role.color}22`,
-              }}>
+        <div className="flex flex-col gap-2.5">
+          {ROLES.map((role) => (
+            <div
+              key={role.label}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border transition-colors hover:bg-muted/50"
+            >
+              <span
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-lg"
+                style={{ background: `${role.color}22` }}
+              >
                 {role.icon}
               </span>
               <div>
-                <p style={{ fontWeight: 600, color: '#fff', fontSize: '13px' }}>{role.label}</p>
-                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>{role.desc}</p>
+                <p className="font-semibold text-[13px] text-foreground">
+                  {role.label}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  {role.desc}
+                </p>
               </div>
-              <div style={{
-                marginLeft: 'auto', width: '8px', height: '8px',
-                borderRadius: '50%', background: role.color,
-              }} />
+              <div
+                className="ml-auto w-2 h-2 rounded-full"
+                style={{ background: role.color }}
+              />
             </div>
           ))}
         </div>
 
-        <p style={{ marginTop: '24px', fontSize: '12px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.6 }}>
-          TransitOps • Smart Transport Operations Platform<br />
+        <p className="mt-6 text-xs text-muted-foreground/60 leading-relaxed">
+          TransitOps • Smart Transport Operations Platform
+          <br />
           Odoo Hiring Hackathon 2026
         </p>
       </div>
     </div>
-  )
+  );
 }
 
 // ─── Mini spinner ───────────────────────────────────────────────────────────
 
 function LoadingSpinner() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ animation: 'spin 0.7s linear infinite' }}>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill="none"
+      style={{ animation: "spin 0.7s linear infinite" }}
+    >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <circle cx="7" cy="7" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-      <path d="M7 1a6 6 0 0 1 6 6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+      <circle
+        cx="7"
+        cy="7"
+        r="6"
+        stroke="rgba(255,255,255,0.3)"
+        strokeWidth="2"
+      />
+      <path
+        d="M7 1a6 6 0 0 1 6 6"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
-  )
+  );
 }

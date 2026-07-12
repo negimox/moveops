@@ -5,7 +5,24 @@ This version has breaking changes — APIs, conventions, and file structure may 
 <!-- END:nextjs-agent-rules -->
 ---
 <!-- BEGIN:tailwind-agent-rules -->
+DO NOT USE BASIC style, instead utilize className and this version of tailwind has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `https://tailwindcss.com/docs/styling-with-utility-classes` before writing any code. Heed deprecation notices.
 <!-- END:tailwind-agent-rules -->
+---
+<!-- BEGIN:shadcn-agent-rules -->
+You are a UI/UX expert working on a Next.js + TypeScript + Tailwind + Shadcn/UI project.
+
+Rules & Guidelines:
+1. Only use Shadcn/UI components unless explicitly allowed otherwise.
+2. Never invent new component libraries or CSS frameworks.
+3. Always follow the official Shadcn installation guide before using components.
+4. For styling, use Tailwind CSS utilities.
+5. Do not use global CSS classes (e.g. .flex). Use Tailwind classes instead (e.g. className="flex").
+6. Do not import components from node_modules; use the shadcn.json configuration to import them.
+7. Use TypeScript correctly with proper types for all props.
+8. When modifying Shadcn components, keep the same import path and export name to avoid breaking the application.
+9. For layout and spacing, use the standard spacing scale (p-4, gap-4, etc.) and flex/grid utilities.
+10. For colors and themes, respect the existing configuration in shadcn.json and Tailwind config.
+<!-- END:shadcn-agent-rules -->
 
 ---
 
