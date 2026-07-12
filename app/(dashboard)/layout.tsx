@@ -1,25 +1,10 @@
-/**
- * app/(dashboard)/layout.tsx
- * Dashboard shell layout — dark sidebar + white content area.
- * All pages inside /(dashboard)/ inherit this layout.
- */
-
 import Sidebar from '@/components/ui/Sidebar'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar />
-      <main
-        style={{
-          marginLeft: 'var(--sidebar-width)',
-          flex: 1,
-          minHeight: '100vh',
-          background: 'var(--bg-base)',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      <main className="flex-1 flex flex-col min-h-screen">
         {children}
       </main>
     </div>
