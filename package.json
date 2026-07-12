@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^9.0.3"
+  }
+}
