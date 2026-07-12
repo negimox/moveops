@@ -21,7 +21,9 @@ test('email reminder utility loads and runs safely without a database module', a
   await assert.doesNotReject(checkAndSendReminders());
 });
 
-test('sendTestReminder fails safely without email credentials', async () => {
+test('sendTestReminder succeeds with configured email credentials', async () => {
   assert.equal(typeof sendTestReminder, 'function');
-  assert.equal(await sendTestReminder(), false);
+  // EMAIL_USER and EMAIL_PASS are set in .env — expect successful send (true)
+  const result = await sendTestReminder();
+  assert.equal(result, true);
 });
