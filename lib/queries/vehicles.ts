@@ -14,6 +14,7 @@ export interface Vehicle extends QueryResultRow {
   total_trips: number
   total_earnings: string
   notes: string | null
+  region: string
   created_at: Date
   updated_at: Date
 }
@@ -43,11 +44,12 @@ export async function createVehicle(data: {
   capacity_kg: number
   avg_cost_per_km: number
   notes?: string
+  region: string
 }) {
   const result = await query<Vehicle>(
     `INSERT INTO vehicles (
-      vehicle_id, type, make_model, year, registration_no, capacity_kg, avg_cost_per_km, notes
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      vehicle_id, type, make_model, year, registration_no, capacity_kg, avg_cost_per_km, notes, region
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING *`,
     [
       data.vehicle_id,
@@ -58,6 +60,7 @@ export async function createVehicle(data: {
       data.capacity_kg,
       data.avg_cost_per_km,
       data.notes || null,
+      data.region,
     ]
   )
   return result.rows[0]

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const data = await request.json()
 
-    if (!data.vehicle_id || !data.type || !data.capacity_kg || data.avg_cost_per_km === undefined) {
+    if (!data.vehicle_id || !data.type || !data.capacity_kg || data.avg_cost_per_km === undefined || !data.region) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
