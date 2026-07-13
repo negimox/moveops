@@ -9,10 +9,11 @@ export interface Driver extends QueryResultRow {
   license_verified: boolean
   license_expiry: string | null
   license_data: any | null
-  category: string
+  license_category: string
   status: 'pending_approval' | 'available' | 'on_trip' | 'off_duty' | 'suspended'
   trip_count: number
   safety_score: number
+  trip_completion_pct: number
   registered_by: number | null
   approved_by: number | null
   created_at: Date
@@ -34,19 +35,19 @@ export async function createDriver(data: {
   name: string
   contact: string
   license_id: string
-  category: string
+  license_category: string
   registered_by: number
 }) {
   const result = await query<Driver>(
     `INSERT INTO drivers (
-      name, contact, license_id, category, registered_by, status
-    ) VALUES ($1, $2, $3, $4, $5, 'pending_approval')
+      name, contact, license_id, license_category, registered_by, status, trip_completion_pct
+    ) VALUES ($1, $2, $3, $4, $5, 'pending_approval', 100)
     RETURNING *`,
     [
       data.name,
       data.contact,
       data.license_id,
-      data.category,
+      data.license_category,
       data.registered_by
     ]
   )

@@ -12,6 +12,7 @@ export interface Trip extends QueryResultRow {
   status: 'scheduled' | 'dispatched' | 'on_trip' | 'completed' | 'cancelled'
   cargo_weight_kg: string
   distance_km: string | null
+  planned_distance_km: string | null
   revenue: string
   scheduled_at: Date
   completed_at: Date | null
@@ -82,6 +83,7 @@ export async function createTrip(data: {
   origin: string
   destination: string
   cargo_weight_kg: number
+  planned_distance_km?: number
   notes?: string
 }) {
   const trip_code = `TRP-${Math.floor(100000 + Math.random() * 900000)}`
@@ -92,8 +94,8 @@ export async function createTrip(data: {
   try {
     const result = await query<Trip>(
       `INSERT INTO trips (
-        trip_code, vehicle_id, driver_id, dispatcher_id, origin, destination, cargo_weight_kg, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        trip_code, vehicle_id, driver_id, dispatcher_id, origin, destination, cargo_weight_kg, planned_distance_km, notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
       [
         trip_code,
@@ -103,6 +105,7 @@ export async function createTrip(data: {
         data.origin,
         data.destination,
         data.cargo_weight_kg,
+        data.planned_distance_km || null,
         data.notes || null,
       ]
     )

@@ -38,18 +38,20 @@ export async function register() {
       if (!db) return;
 
       try {
-        // Fetch all non-suspended, active drivers that have both a license
-        // number and a date of birth stored — both are required by the Setu API.
+        // Fetch all non-suspended, active drivers that have a stored
+        // DigiLocker request ID — this means the driver has already completed
+        // the Setu consent flow (Step 1). Without a request ID we cannot
+        // call the document endpoint (Step 2) so we skip those drivers.
         const { rows: drivers } = await db.query(`
-          SELECT id, name, email, license_number, date_of_birth
+          SELECT id, name, email, license_number, digilocker_request_id
           FROM   Drivers
           WHERE  status != 'Suspended'
-          AND    license_number IS NOT NULL
-          AND    date_of_birth  IS NOT NULL
+          AND    license_number          IS NOT NULL
+          AND    digilocker_request_id   IS NOT NULL
         `);
 
         if (drivers.length === 0) {
-          console.log('[DigiLocker Cron] No eligible drivers to verify.');
+          console.log('[DigiLocker Cron] No drivers with a completed DigiLocker consent — skipping verification.');
           return;
         }
 
@@ -71,7 +73,7 @@ export async function register() {
 
         for (const driver of drivers) {
           try {
-            const result = await verifyDL(driver.license_number, driver.date_of_birth);
+            const result = await verifyDL(driver.license_number, driver.digilocker_request_id);
 
             if (result.status === 'EXPIRED' || result.status === 'INVALID') {
               console.warn(

@@ -10,7 +10,8 @@ export interface Vehicle extends QueryResultRow {
   registration_no: string | null
   capacity_kg: number
   status: 'available' | 'on_trip' | 'in_shop' | 'retired'
-  avg_cost_per_km: string
+  odometer: number
+  acquisition_cost: string
   total_trips: number
   total_earnings: string
   notes: string | null
@@ -42,14 +43,15 @@ export async function createVehicle(data: {
   year?: number
   registration_no?: string
   capacity_kg: number
-  avg_cost_per_km: number
+  odometer?: number
+  acquisition_cost?: number
   notes?: string
   region: string
 }) {
   const result = await query<Vehicle>(
     `INSERT INTO vehicles (
-      vehicle_id, type, make_model, year, registration_no, capacity_kg, avg_cost_per_km, notes, region
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      vehicle_id, type, make_model, year, registration_no, capacity_kg, odometer, acquisition_cost, notes, region
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING *`,
     [
       data.vehicle_id,
@@ -58,7 +60,8 @@ export async function createVehicle(data: {
       data.year || null,
       data.registration_no || null,
       data.capacity_kg,
-      data.avg_cost_per_km,
+      data.odometer || 0,
+      data.acquisition_cost || 0,
       data.notes || null,
       data.region,
     ]
@@ -70,7 +73,8 @@ export async function updateVehicle(
   id: number,
   data: Partial<{
     status: 'available' | 'on_trip' | 'in_shop' | 'retired'
-    avg_cost_per_km: number
+    odometer: number
+    acquisition_cost: number
     notes: string
   }>
 ) {
