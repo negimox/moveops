@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS drivers             CASCADE;
 DROP TABLE IF EXISTS vehicles            CASCADE;
 DROP TABLE IF EXISTS roles               CASCADE;
 DROP TABLE IF EXISTS users               CASCADE;
+DROP TABLE IF EXISTS depot_settings      CASCADE;
 
 -- ─── Drop ENUM types ───────────────────────────────────────
 DROP TYPE IF EXISTS user_role          CASCADE;
@@ -40,7 +41,6 @@ CREATE TYPE vehicle_status AS ENUM (
 );
 
 CREATE TYPE driver_status AS ENUM (
-  'pending_approval',
   'available',
   'on_trip',
   'off_duty',
@@ -50,7 +50,6 @@ CREATE TYPE driver_status AS ENUM (
 CREATE TYPE trip_status AS ENUM (
   'scheduled',
   'dispatched',
-  'on_trip',
   'completed',
   'cancelled'
 );
@@ -135,6 +134,7 @@ CREATE TABLE vehicles (
   avg_cost_per_km DECIMAL(10, 2)      NOT NULL DEFAULT 0.00,
   total_trips     INTEGER             NOT NULL DEFAULT 0,
   total_earnings  DECIMAL(12, 2)      NOT NULL DEFAULT 0.00,
+  region          VARCHAR(100)        DEFAULT 'North',
   notes           TEXT,
   created_at      TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ         NOT NULL DEFAULT NOW()
@@ -157,10 +157,9 @@ CREATE TABLE drivers (
   license_expiry   DATE,                         -- parsed from DigiLocker response
   license_data     JSONB,                        -- raw Setu API document payload
   category         VARCHAR(50),                  -- LMV, HMV, HPMV, etc.
-  status           driver_status      NOT NULL DEFAULT 'pending_approval',
+  status           driver_status      NOT NULL DEFAULT 'available',
   trip_count       INTEGER            NOT NULL DEFAULT 0,
-  safety_score     INTEGER            NOT NULL DEFAULT 100  -- 0–100
-                   CHECK (safety_score BETWEEN 0 AND 100),
+  safety           driver_status      NOT NULL DEFAULT 'available',
   registered_by    INTEGER            REFERENCES users(id) ON DELETE SET NULL, -- safety_officer who registered
   approved_by      INTEGER            REFERENCES users(id) ON DELETE SET NULL, -- fleet_manager who approved
   created_at       TIMESTAMPTZ        NOT NULL DEFAULT NOW(),
@@ -301,34 +300,63 @@ INSERT INTO vehicles (vehicle_id, make_model, type, year, registration_no, capac
 -- license_verified = TRUE for demo — real flow uses Setu DigiLocker
 -- ============================================================
 
-INSERT INTO drivers (name, contact, license_id, license_verified, license_expiry, category, status, trip_count, safety_score, registered_by, approved_by) VALUES
-  ('Ravi Kumar',    '+91-9810001111', 'MH12AB1234', TRUE, '2029-06-30', 'LMV',  'available', 12, 96,
+INSERT INTO drivers (name, contact, license_id, license_verified, license_expiry, category, status, trip_count, safety, registered_by, approved_by) VALUES
+  ('Ravi Kumar',    '+91-9810001111', 'MH12AB1234', TRUE, '2029-06-30', 'LMV',  'available', 12, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Amit Verma',    '+91-9820002222', 'DL05CD5678', TRUE, '2027-03-15', 'HMV',  'on_trip',   28, 88,
+  ('Amit Verma',    '+91-9820002222', 'DL05CD5678', TRUE, '2027-03-15', 'HMV',  'on_trip',   28, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Suresh Pillai', '+91-9830003333', 'KA03EF9012', TRUE, '2028-11-20', 'HMV',  'available',  9, 100,
+  ('Suresh Pillai', '+91-9830003333', 'KA03EF9012', TRUE, '2028-11-20', 'HMV',  'available',  9, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Deepak Joshi',  '+91-9840004444', 'UP32GH3456', TRUE, '2026-09-10', 'LMV',  'off_duty',   5,  74,
+  ('Deepak Joshi',  '+91-9840004444', 'UP32GH3456', TRUE, '2026-09-10', 'LMV',  'off_duty',   5,  'suspended',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Manish Tiwari', '+91-9850005555', 'GJ07IJ7890', TRUE, '2030-01-05', 'HPMV', 'available', 34,  91,
+  ('Manish Tiwari', '+91-9850005555', 'GJ07IJ7890', TRUE, '2030-01-05', 'HPMV', 'available', 34,  'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Pooja Das',     '+91-9860006666', 'WB22KL2345', FALSE, NULL,         'LMV', 'off_duty',    0, 100,
+  ('Pooja Das',     '+91-9860006666', 'WB22KL2345', FALSE, NULL,         'LMV', 'off_duty',    0, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     (SELECT id FROM users WHERE email = 'fleet@transitops.in')),
 
-  ('Anil Desai',    '+91-9870007777', 'MH14XY9876', TRUE, '2031-08-12', 'LMV', 'pending_approval', 0, 100,
+  ('Anil Desai',    '+91-9870007777', 'MH14XY9876', TRUE, '2031-08-12', 'LMV', 'available', 0, 'available',
     (SELECT id FROM users WHERE email = 'safety@transitops.in'),
     NULL);
+
+-- ── Additional driver: Shwet (DigiLocker-verified, license_data from Setu API) ──
+INSERT INTO drivers (
+  name, contact, license_id, license_verified, license_expiry,
+  license_data, category, status, trip_count, safety,
+  registered_by, approved_by,
+  created_at, updated_at
+) VALUES (
+  'Shwet',
+  '91902101209',
+  'adsadsd',
+  TRUE,
+  '2026-07-19',                    -- license_expiry from validUpto field
+  '{
+    "s3Key": "licenses/b5a1dc5c-01ba-4d88-9a23-ae2a92739222.pdf",
+    "fileUrl": "https://dg-sandbox.s3.amazonaws.com/a1104ec4-7be7-4c70-af78-f5fa72183c6a/digi-d6acd5fb-3ba8-418a-be37-f661a28b3754.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIA6GJ2FQNTKW65EN6L%2F20260712%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20260712T111525Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEBYaCmFwLXNvdXRoLTEiSDBGAiEA%2FVRpUrhXyAtDJc5Q3gDQm0jU8U5QEYAtqBI6OslY72UCIQCcN3wq9Js%2FsvyLNTrXdsNtjwloqKZ3G%2Ff%2BdmMySg7XeiqJBAjf%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAMaDDk3NTYxNjQ0MzIzOCIMSuxlIrKZTyQFB%2BQTKt0D6k9tUSqFrXJEvjUEQLN5DAG4vfSez8fFxYcO4WrLSEBqOsFyzrPVyVeEHJb4aqTh7YAUe31gAWuTz0zy2LiVncmntPfu2haPzpiDzllmTEj1ypf2LtyFoFljHbI1GLOZf%2FQTfjikVpYslj9NIfcd%2BFC8YskULrjW46znU7ebUgwoKtLGu3KrhF3bIL5YDknRTFQcdItWy9B9nnCjR7G5xcQcVjXzxiRXOCNJDyDORE73uX00JXDCi8nplVEw3DD0o%2FAatJtzyaAwjUSPU%2BBCNhHrYIk%2BCjhnxvOgwZ2qvFGfMHYk4okjwoXxvxwZSzbL4CXzYs55fZofT1WFbFPRgS%2BoogRRDBV5u8mfxmEARMz1R8kty0FCqk%2B22zlAVIXMWmuDETtuZEpF9tgZ%2FdwI9EKgv0tVSjzu6iQiaOB86QIXRGQOhZ7au4alGR9nvPIuMxgF0JfYHvBiO4mm6Bnj4499ZYd7webl8ezHxnDPUzIGHC1%2F1O7t2KlraXABrD5RO7yKAZIFcMY7oKqMwKz7nVflmpeXNsqJykRCWg5uiR4%2BynjvsCaV3UG%2BTlWOsJyeTNukq9yPoPcqKDhWsZYRW9Dg%2BIS6FqePAAPZXhOG7Rwtrvcik8ZPX9hZ2jiTMJjgzNIGOqQBpVvbyCYEXnm81%2BSK0TwmDHcv0daZ0aw7GZMUgb0n0LqBYYJSEHGqg3ub81Iy8xvDVKHOVTgKMiv67kQihMz%2BXIDZRN8aQ7ChvNS5f0RMxpLjezDc2bVT5CjEDCy5yh0x7Q4uk1sVQAD7H82uyn%2BLf2dD7ugUJAcw0nS21KXoeWPpPLZFjiCMlDWpt9dl96LH%2B9LMiBMwfKxa85w3wAZcST%2F1%2FCE%3D&X-Amz-Signature=5bb07c018066c1b0e1544afdd5ba0487b0f2d051cc5ca29755054ea987ac9fe3",
+    "traceId": "1-6a53774c-415c41815a33b1eb700e8baa",
+    "validUpto": "2026-07-19T16:45:25+05:30"
+  }'::jsonb,
+  'LMV',
+  'available',
+  0,
+  'available',
+  NULL,    -- registered_by (no safety officer linked)
+  NULL,    -- approved_by
+  '2026-07-12T11:15:26.740Z'::TIMESTAMPTZ,
+  '2026-07-12T11:15:26.740Z'::TIMESTAMPTZ
+);
+
 
 -- ============================================================
 -- Seed: trips  (Dispatcher domain)
@@ -350,7 +378,7 @@ INSERT INTO trips (trip_code, vehicle_id, driver_id, dispatcher_id, origin, dest
     (SELECT id FROM drivers  WHERE license_id = 'DL05CD5678'),
     (SELECT id FROM users    WHERE email = 'dispatch@transitops.in'),
     'Delhi — Naraina ICD',           'Jaipur — RIICO Industrial Area',
-    'on_trip', 4200.00, NULL, 52000.00,
+    'dispatched', 4200.00, NULL, 52000.00,
     NOW() - INTERVAL '1 day', NULL),
 
   ('TRP-003',
@@ -552,3 +580,31 @@ INSERT INTO expenses (category, amount, vehicle_id, trip_id, description, logged
    'Loading/unloading labour charges — Bengaluru depot.',
    CURRENT_DATE + 1,
    (SELECT id FROM users WHERE email = 'finance@transitops.in'));
+
+-- ============================================================
+-- Entity 9: depot_settings
+-- Singleton row (id = 1) holding global depot configuration.
+-- Editable by Fleet Manager via the Settings page.
+-- currency is stored as the ISO code, e.g. 'INR'.
+-- distance_unit is one of: 'Kilometer', 'Meter', 'Inch'.
+-- ============================================================
+
+CREATE TABLE depot_settings (
+  id            INTEGER      PRIMARY KEY DEFAULT 1 CHECK (id = 1),  -- enforce singleton
+  depot_name    VARCHAR(150) NOT NULL DEFAULT 'TransitOps Depot',
+  currency      VARCHAR(10)  NOT NULL DEFAULT 'INR',                -- ISO code
+  distance_unit VARCHAR(20)  NOT NULL DEFAULT 'Kilometer'
+    CHECK (distance_unit IN ('Kilometer', 'Meter', 'Inch')),
+  updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_by    INTEGER      REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Seed: one default depot settings row
+INSERT INTO depot_settings (id, depot_name, currency, distance_unit, updated_by)
+VALUES (
+  1,
+  'Mumbai Central Depot',
+  'INR',
+  'Kilometer',
+  (SELECT id FROM users WHERE email = 'fleet@transitops.in')
+);

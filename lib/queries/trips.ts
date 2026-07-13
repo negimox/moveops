@@ -9,7 +9,7 @@ export interface Trip extends QueryResultRow {
   dispatcher_id: number
   origin: string
   destination: string
-  status: 'scheduled' | 'dispatched' | 'on_trip' | 'completed' | 'cancelled'
+  status: 'scheduled' | 'dispatched' | 'completed' | 'cancelled'
   cargo_weight_kg: string
   distance_km: string | null
   planned_distance_km: string | null
@@ -124,7 +124,7 @@ export async function createTrip(data: {
 
 export async function updateTripStatus(
   id: number,
-  status: 'scheduled' | 'dispatched' | 'on_trip' | 'completed' | 'cancelled',
+  status: 'scheduled' | 'dispatched' | 'completed' | 'cancelled',
   details?: {
     distance_km?: number
     revenue?: number

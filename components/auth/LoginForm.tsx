@@ -271,9 +271,7 @@ export default function LoginForm() {
                 <p className="font-semibold text-[13px] text-foreground">
                   {role.label}
                 </p>
-                <p className="text-muted-foreground text-xs">
-                  {role.desc}
-                </p>
+                <p className="text-muted-foreground text-xs">{role.desc}</p>
               </div>
               <div
                 className="ml-auto w-2 h-2 rounded-full"
@@ -282,12 +280,6 @@ export default function LoginForm() {
             </div>
           ))}
         </div>
-
-        <p className="mt-6 text-xs text-muted-foreground/60 leading-relaxed">
-          TransitOps • Smart Transport Operations Platform
-          <br />
-          Odoo Hiring Hackathon 2026
-        </p>
       </div>
     </div>
   );
